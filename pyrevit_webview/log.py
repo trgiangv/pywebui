@@ -54,7 +54,7 @@ def _thread_tag():
 
 
 def debug_trace(where, detail=""):
-    # type: (str, Any) -> None
+    # type: (str, str) -> None
     """Print a one-line diagnostic; always flush so pyRevit journal/output sees it."""
     if not _trace_enabled():
         return

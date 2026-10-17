@@ -30,16 +30,11 @@ elif PY3:
     import urllib.request as urllib_request
     from urllib.parse import urlparse
 
-try:
-    from typing import TYPE_CHECKING
-except ImportError:
-    TYPE_CHECKING = False
-
-if TYPE_CHECKING:
+if sys.version_info >= (3, 5):
     from typing import Any, Callable, Dict, List, Optional, Union
 else:
-    # Runtime, including IronPython 2.7 / 3.4 (no typing module). Subscript
-    # must succeed so aliases like Callable[[], None] can be assigned at import.
+    # IronPython 2.7 / 3.4 have no typing module. Subscript must succeed so
+    # aliases like Callable[[], None] can be assigned at import.
     class _Type(object):
         def __getitem__(self, _item):
             return self
@@ -53,10 +48,11 @@ if PY2:
 
 def json_load_error_types():
     # type: () -> tuple
+    decode_error = ValueError
     if PY3:
         import json
-        return (json.JSONDecodeError, ValueError, TypeError)
-    return (ValueError, TypeError)
+        decode_error = json.JSONDecodeError
+    return (decode_error, ValueError, TypeError)
 
 
 def urlopen(url):

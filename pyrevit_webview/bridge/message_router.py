@@ -7,21 +7,21 @@ import json
 
 from pyrevit_webview.compat import Any, Callable, Dict, Optional
 from pyrevit_webview.dotnet import bootstrap_clr
-from pyrevit_webview.types import InvokeOnUi
 from pyrevit_webview.log import debug_trace
 
 bootstrap_clr()
 
 RESPONSE_EVENT = "bridge-response"  # type: str
+_TRACE_HANDLE_RAW = "MessageRouter.handle_raw"  # type: str
 
 
 class MessageRouter(object):
     """Registry-based dispatcher for ``WebMessageReceived`` / ``postMessage``."""
 
     def __init__(self, core, invoke_on_ui):
-        # type: (Any, InvokeOnUi) -> None
+        # type: (Any, Callable[[Callable[[], None]], None]) -> None
         self._core = core  # type: Any
-        self._invoke_on_ui = invoke_on_ui  # type: InvokeOnUi
+        self._invoke_on_ui = invoke_on_ui  # type: Callable[[Callable[[], None]], None]
         self._handlers = {}  # type: Dict[str, Callable]
 
     def register(self, message_type, handler):
@@ -67,16 +67,23 @@ class MessageRouter(object):
     def _dispatch_message(self, message):
         # type: (Dict[str, Any]) -> None
         msg_type = message.get("type")
+        # Python 2 json.loads uses unicode keys; type(u"") is str on Python 3.
+        if not isinstance(msg_type, (str, type(u""))):
+            debug_trace(
+                _TRACE_HANDLE_RAW,
+                "missing type: {0}".format(msg_type),
+            )
+            return
         handler = self._handlers.get(msg_type)
         if handler is None:
-            debug_trace("MessageRouter.handle_raw", "unknown type: {0}".format(msg_type))
+            debug_trace(_TRACE_HANDLE_RAW, "unknown type: {0}".format(msg_type))
             return
 
         try:
             handler(message)
         except Exception as exc:
             debug_trace(
-                "MessageRouter.handle_raw",
+                _TRACE_HANDLE_RAW,
                 "handler error ({0}): {1!r}".format(msg_type, exc),
             )
             request_id = message.get("id")
@@ -89,10 +96,10 @@ def _parse_message(raw_json):
     try:
         message = json.loads(raw_json)
     except Exception as exc:
-        debug_trace("MessageRouter.handle_raw", "invalid JSON: {0!r}".format(exc))
+        debug_trace(_TRACE_HANDLE_RAW, "invalid JSON: {0!r}".format(exc))
         return None
 
     if not isinstance(message, dict):
-        debug_trace("MessageRouter.handle_raw", "message is not an object")
+        debug_trace(_TRACE_HANDLE_RAW, "message is not an object")
         return None
     return message

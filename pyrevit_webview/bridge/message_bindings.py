@@ -4,6 +4,7 @@
 from __future__ import print_function, division
 
 import inspect
+import sys
 
 from pyrevit_webview.bridge.binding import Bindable
 from pyrevit_webview.bridge.message_router import MessageRouter
@@ -97,10 +98,10 @@ def _validate_argument_count(method, method_name, params):
     continue to rely on the invocation error, preserving support for those methods.
     """
     try:
-        getargspec = getattr(inspect, "getfullargspec", None)
-        if getargspec is None:
-            getargspec = inspect.getargspec
-        spec = getargspec(method)
+        if sys.version_info[0] == 2:
+            spec = inspect.getargspec(method)
+        else:
+            spec = inspect.getfullargspec(method)
     except (TypeError, ValueError, AttributeError):
         return
 

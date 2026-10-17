@@ -61,26 +61,26 @@ def revit_invoke_sync(action):
         debug_trace("revit_invoke_sync", "inline (already main)")
         return action()
 
-    from System import Action
+    from System import Func
     from Revit.Async import RevitTask
-    from System.Threading import ManualResetEventSlim
 
     debug_trace("revit_invoke_sync", "marshal via RevitTask")
-    gate = ManualResetEventSlim(False)
     box = {"result": None, "error": None}  # type: dict
 
     def run():
-        # type: () -> None
+        # type: () -> Any
         debug_trace("revit_invoke_sync.run", "on main")
         try:
             box["result"] = action()
         except Exception as exc:
             box["error"] = exc
-        finally:
-            gate.Set()
+        return None
 
-    RevitTask.RunAsync(Action(run)).GetAwaiter().GetResult()
-    gate.Wait()
+    # RunAsync(Action) is a method group on the stub and is not callable there.
+    # The generic Func overload is the one the stub types, and its Task completes
+    # only after the delegate returns. The Python result stays in box so it does
+    # not have to cross the CLR boundary.
+    RevitTask.RunAsync[object](Func[object](run)).GetAwaiter().GetResult()
     if box["error"] is not None:
         raise box["error"]
     return box["result"]
