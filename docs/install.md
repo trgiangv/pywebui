@@ -20,7 +20,7 @@ This restores NuGet packages and copies managed DLLs into `pyrevit_webview/bin/`
 
 ## Runtime loading
 
-Assemblies load from extension `bin/` only when not already resolvable by the CLR importer. Safe to call on every window open.
+If the assembly simple name is already in the AppDomain, `load_bin()` only registers it with the CLR importer and does not load the `bin/` copy. Otherwise it loads that file. Safe to call on every window open.
 
 | File | When loaded |
 |------|-------------|

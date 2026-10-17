@@ -23,12 +23,38 @@ CoreWebView2NavigationStartingEventArgs = None  # type: Any
 WebView2 = None  # type: Any
 
 
+def _appdomain_names():
+    # type: () -> set
+    from System import AppDomain
+
+    names = set()
+    for assembly in AppDomain.CurrentDomain.GetAssemblies():
+        if not assembly.IsDynamic:
+            names.add(assembly.GetName().Name)
+    return names
+
+
+def _add_reference(clr, filename, loaded):
+    # type: (Any, str, set) -> None
+    """Bind a ``bin`` DLL, or the AppDomain assembly when that name is already loaded."""
+    from pyrevit_webview.compat import IRONPY
+
+    assembly_name = os.path.splitext(filename)[0]
+    if assembly_name in loaded:
+        clr.AddReference(assembly_name)
+        return
+
+    path = os.path.abspath(os.path.join(_BIN_DIR, filename))
+    add = clr.AddReferenceToFileAndPath if IRONPY else clr.AddReference
+    add(path)
+
+
 def load_bin():
     # type: () -> None
-    """Register every ``*.dll`` in extension ``bin/`` with the CLR importer.
+    """Register ``bin/*.dll`` with the CLR importer.
 
-    IronPython needs ``clr.AddReference`` even when the assembly is already in
-    the AppDomain — otherwise ``from Namespace import Type`` fails.
+    A simple name already in the AppDomain is not loaded again. ``AddReference``
+    still runs so IronPython can import the namespace.
     """
     global _bin_loaded
     if _bin_loaded:
@@ -38,29 +64,10 @@ def load_bin():
 
     import clr
 
-    from pyrevit_webview.compat import IRONPY
-
+    loaded = _appdomain_names()
     for name in sorted(os.listdir(_BIN_DIR)):
-        if not name.lower().endswith(".dll"):
-            continue
-
-        stem = name[:-4]
-        path = os.path.abspath(os.path.join(_BIN_DIR, name))
-
-        try:
-            clr.AddReference(stem)
-            continue
-        except Exception:
-            pass
-
-        try:
-            if IRONPY:
-                clr.AddReferenceToFileAndPath(path)
-            else:
-                clr.AddReference(path)
-        except Exception:
-            continue
-
+        if name.lower().endswith(".dll"):
+            _add_reference(clr, name, loaded)
     _bin_loaded = True
 
 
