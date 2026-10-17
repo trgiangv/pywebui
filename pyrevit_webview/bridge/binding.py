@@ -5,8 +5,8 @@ from __future__ import print_function, division
 
 from pyrevit_webview.compat import Callable, Dict, Optional
 
-BRIDGE_CALLABLE_ATTR = "__bridge_callable__"
-BRIDGE_CALLABLE_NAME_ATTR = "__bridge_callable_name__"
+BRIDGE_CALLABLE_ATTR = "__bridge_callable__"  # type: str
+BRIDGE_CALLABLE_NAME_ATTR = "__bridge_callable_name__"  # type: str
 
 
 def bridge_callable(method_name=None):

@@ -11,18 +11,17 @@ from pyrevit_webview.types import InvokeOnUi
 from pyrevit_webview.log import debug_trace
 
 bootstrap_clr()
-from pyrevit_webview.dotnet import CoreWebView2
 
-RESPONSE_EVENT = "bridge-response"
+RESPONSE_EVENT = "bridge-response"  # type: str
 
 
 class MessageRouter(object):
     """Registry-based dispatcher for ``WebMessageReceived`` / ``postMessage``."""
 
     def __init__(self, core, invoke_on_ui):
-        # type: (CoreWebView2, InvokeOnUi) -> None
-        self._core = core
-        self._invoke_on_ui = invoke_on_ui
+        # type: (Any, InvokeOnUi) -> None
+        self._core = core  # type: Any
+        self._invoke_on_ui = invoke_on_ui  # type: InvokeOnUi
         self._handlers = {}  # type: Dict[str, Callable]
 
     def register(self, message_type, handler):
@@ -40,7 +39,7 @@ class MessageRouter(object):
     def respond(self, request_id, ok, data=None, error=None):
         # type: (str, bool, Any, Optional[str]) -> None
         """Emit a request/response payload to the page."""
-        payload = {"id": request_id, "ok": ok}
+        payload = {"id": request_id, "ok": ok}  # type: Dict[str, Any]
         if ok:
             payload["data"] = data
         else:
@@ -48,7 +47,7 @@ class MessageRouter(object):
         self.emit(RESPONSE_EVENT, payload)
 
     def emit(self, event_name, detail):
-        # type: (str, dict) -> None
+        # type: (str, Dict[str, Any]) -> None
         """Dispatch a ``CustomEvent`` to the frontend via ``ExecuteScriptAsync``."""
         json_str = json.dumps(detail)
         script = (
@@ -66,7 +65,7 @@ class MessageRouter(object):
         self._invoke_on_ui(run)
 
     def _dispatch_message(self, message):
-        # type: (dict) -> None
+        # type: (Dict[str, Any]) -> None
         msg_type = message.get("type")
         handler = self._handlers.get(msg_type)
         if handler is None:
@@ -86,7 +85,7 @@ class MessageRouter(object):
 
 
 def _parse_message(raw_json):
-    # type: (str) -> Optional[dict]
+    # type: (str) -> Optional[Dict[str, Any]]
     try:
         message = json.loads(raw_json)
     except Exception as exc:

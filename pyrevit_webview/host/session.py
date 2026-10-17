@@ -25,13 +25,13 @@ class WebViewSettings(object):
         built_in_error_page_enabled=False,
     ):
         # type: (bool, bool, bool, bool, bool, bool, bool) -> None
-        self.script_enabled = script_enabled
-        self.web_message_enabled = web_message_enabled
-        self.dev_tools_enabled = dev_tools_enabled
-        self.context_menus_enabled = context_menus_enabled
-        self.zoom_control_enabled = zoom_control_enabled
-        self.pinch_zoom_enabled = pinch_zoom_enabled
-        self.built_in_error_page_enabled = built_in_error_page_enabled
+        self.script_enabled = script_enabled  # type: bool
+        self.web_message_enabled = web_message_enabled  # type: bool
+        self.dev_tools_enabled = dev_tools_enabled  # type: bool
+        self.context_menus_enabled = context_menus_enabled  # type: bool
+        self.zoom_control_enabled = zoom_control_enabled  # type: bool
+        self.pinch_zoom_enabled = pinch_zoom_enabled  # type: bool
+        self.built_in_error_page_enabled = built_in_error_page_enabled  # type: bool
 
 
 class RemoteContent(object):
@@ -39,7 +39,7 @@ class RemoteContent(object):
 
     def __init__(self, start_url):
         # type: (str) -> None
-        self.start_url = start_url
+        self.start_url = start_url  # type: str
 
 
 class PackagedContent(object):
@@ -47,8 +47,8 @@ class PackagedContent(object):
 
     def __init__(self, start_uri, content_root):
         # type: (str, str) -> None
-        self.start_uri = start_uri
-        self.content_root = content_root
+        self.start_uri = start_uri  # type: str
+        self.content_root = content_root  # type: str
 
     def host_name(self):
         # type: () -> str
@@ -77,12 +77,12 @@ class WebViewSession(object):
         additional_browser_arguments=None,
     ):
         # type: (Union[RemoteContent, PackagedContent], Optional[str], str, Optional[int], Optional[WebViewSettings], Optional[logging.Logger], Optional[str]) -> None
-        self.content = content
-        self.user_data_folder = user_data_folder or _default_user_data_folder(app_name)
-        self.debug_cdp_port = debug_cdp_port
-        self.additional_browser_arguments = additional_browser_arguments or ""
-        self.settings = settings or WebViewSettings()
-        self.logger = logger or get_logger()
+        self.content = content  # type: Union[RemoteContent, PackagedContent]
+        self.user_data_folder = user_data_folder or _default_user_data_folder(app_name)  # type: str
+        self.debug_cdp_port = debug_cdp_port  # type: Optional[int]
+        self.additional_browser_arguments = additional_browser_arguments or ""  # type: str
+        self.settings = settings or WebViewSettings()  # type: WebViewSettings
+        self.logger = logger or get_logger()  # type: logging.Logger
 
 
 def _default_user_data_folder(name="pyrevit_webview"):

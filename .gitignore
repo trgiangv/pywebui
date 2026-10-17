@@ -7,7 +7,8 @@ dist/
 *.egg-info/
 .eggs/
 .venv/
-.vscode/
+.vscode/*
+!.vscode/settings.json
 .idea/
 node_modules/
 packages/*/dist/

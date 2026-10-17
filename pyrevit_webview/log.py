@@ -6,10 +6,12 @@ from __future__ import print_function, division
 import logging
 import sys
 
-LOGGER_NAME = "pyrevit_webview"
+from pyrevit_webview.compat import Any
+
+LOGGER_NAME = "pyrevit_webview"  # type: str
 
 # Set True (or env PYREVIT_WEBVIEW_TRACE=1) to print thread-tagged diagnostics to stdout.
-TRACE_ENABLED = True
+TRACE_ENABLED = True  # type: bool
 
 
 def get_logger(name=LOGGER_NAME):

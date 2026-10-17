@@ -54,7 +54,7 @@ def invoke_on_ui_sync(invoke_on_ui, action, dispatcher=None):
         except Exception:
             pass
 
-    gate = threading.Event()
+    gate = threading.Event()  # type: Any
     box = {"result": None, "error": None}  # type: dict
 
     def work():

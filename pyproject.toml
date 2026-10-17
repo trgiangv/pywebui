@@ -4,10 +4,49 @@ version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = []
 
-[tool.pyright]
+[dependency-groups]
+dev = [
+    "basedpyright",
+    "ruff",
+]
+
+# basedpyright rejects a second [tool.pyright] table, so this is the only config.
+[tool.basedpyright]
 pythonVersion = "3.12"
 typeCheckingMode = "basic"
 include = ["pyrevit_webview"]
 defineConstant = { CPYTHON = true }
 reportMissingImports = false
 reportMissingModuleSource = false
+# Type comments are the IronPython 2.7 annotation syntax. Annotations are a syntax error there.
+reportTypeCommentUsage = false
+
+[tool.ruff]
+line-length = 90
+src = ["pyrevit_webview", "tests"]
+target-version = "py312"
+
+[tool.ruff.lint]
+# E4/E7/E9 match Ruff's default. F401 is off: names used only in `# type:`
+# comments look unused, and the autofix would delete them.
+# Pyupgrade stays off: its autofixes (f-strings, `X | None`, dropping
+# `__future__`) do not parse on IronPython 2.7.
+select = ["E4", "E7", "E9"]
+# UP009/UP010 still fire if a wider ruleset is enabled in the editor.
+# `coding: utf-8` and `division` / `print_function` are mandatory on IronPython 2.7.
+ignore = ["UP009", "UP010"]
+
+[tool.ruff.lint.per-file-ignores]
+# Assigned under `if PY2` so `unicode` exists. A def would still name `unicode` on 3.12.
+"pyrevit_webview/compat/__init__.py" = ["E731"]
+# Imports that must follow bootstrap_clr() / load_bin().
+"pyrevit_webview/host/control.py" = ["E402"]
+"pyrevit_webview/host/winforms.py" = ["E402"]
+"pyrevit_webview/host/wpf.py" = ["E402"]
+"pyrevit_webview/bridge/message_router.py" = ["E402"]
+
+[tool.ruff.lint.isort]
+required-imports = ["from __future__ import division, print_function"]
+
+[tool.ruff.format]
+quote-style = "double"

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """WebView2 control - OOP host wiring with bindings and dispose."""
 
-from __future__ import print_function, division
+from __future__ import division, print_function
 
 import io
 import os
@@ -17,14 +17,9 @@ from pyrevit_webview.log import debug_trace
 bootstrap_clr()
 from pyrevit_webview.dotnet import (
     Action,
-    CoreWebView2,
     CoreWebView2Environment,
     CoreWebView2EnvironmentOptions,
     CoreWebView2HostResourceAccessKind,
-    CoreWebView2InitializationCompletedEventArgs,
-    CoreWebView2NavigationCompletedEventArgs,
-    CoreWebView2NavigationStartingEventArgs,
-    WebView2,
 )
 from pyrevit_webview.host.session import (
     PackagedContent,
@@ -32,12 +27,12 @@ from pyrevit_webview.host.session import (
     WebViewSession,
     WebViewSettings,
 )
-
 from pyrevit_webview.types import InvokeOnUi
 
 _UNIQUE_WINDOW_CLASS_ARGUMENT = "--edge-webview-unique-window-class"
 
 OnBrowserReady = Callable[["WebViewControl"], None]
+EventHandler = Callable[[Any, Any], None]
 
 
 class WebViewControl(object):
@@ -54,27 +49,27 @@ class WebViewControl(object):
         invoke_on_ui,
         on_browser_ready=None,
     ):
-        # type: (WebView2, WebViewSession, List[Bindable], InvokeOnUi, Optional[OnBrowserReady]) -> None
-        self._webview = webview
-        self._session = session
-        self._bindings = list(bindings)
-        self._invoke_on_ui = invoke_on_ui
-        self._on_browser_ready = on_browser_ready
-        self._disposed = False
+        # type: (Any, WebViewSession, List[Bindable], InvokeOnUi, Optional[OnBrowserReady]) -> None
+        self._webview = webview  # type: Any
+        self._session = session  # type: WebViewSession
+        self._bindings = list(bindings)  # type: List[Bindable]
+        self._invoke_on_ui = invoke_on_ui  # type: InvokeOnUi
+        self._on_browser_ready = on_browser_ready  # type: Optional[OnBrowserReady]
+        self._disposed = False  # type: bool
         self._router = None  # type: Optional[MessageRouter]
-        self._on_init_completed = None  # type: Optional[Callable]
-        self._core_ready = False
-        self._on_web_message_received = None
-        self._on_navigation_starting = None
-        self._on_navigation_completed = None
-        self._on_loaded = None
+        self._on_init_completed = None  # type: Optional[EventHandler]
+        self._core_ready = False  # type: bool
+        self._on_web_message_received = None  # type: Optional[EventHandler]
+        self._on_navigation_starting = None  # type: Optional[EventHandler]
+        self._on_navigation_completed = None  # type: Optional[EventHandler]
+        self._on_loaded = None  # type: Optional[EventHandler]
         debug_trace("WebViewControl.__init__", "begin")
         self._wire()
         debug_trace("WebViewControl.__init__", "wired")
 
     @property
     def webview(self):
-        # type: () -> WebView2
+        # type: () -> Any
         return self._webview
 
     @property
@@ -220,7 +215,7 @@ class WebViewControl(object):
         debug_trace("WebViewControl._start_environment", "OnCompleted registered")
 
     def _on_core_init_completed(self, sender, args):
-        # type: (Any, CoreWebView2InitializationCompletedEventArgs) -> None
+        # type: (Any, Any) -> None
         debug_trace(
             "CoreWebView2InitializationCompleted",
             "IsSuccess={0}".format(getattr(args, "IsSuccess", "?")),
@@ -243,7 +238,7 @@ class WebViewControl(object):
 
 
 def _log_core_init_failure(session, args):
-    # type: (WebViewSession, CoreWebView2InitializationCompletedEventArgs) -> None
+    # type: (WebViewSession, Any) -> None
     err = args.InitializationException
     if err is not None:
         msg = err.Message
@@ -255,16 +250,17 @@ def _log_core_init_failure(session, args):
 
 
 def _configure_initialized_core(control, core):
-    # type: (WebViewControl, CoreWebView2) -> None
+    # type: (WebViewControl, Any) -> None
     debug_trace("InitCompleted", "configure_settings")
     configure_settings(core, control._session.settings)
 
     control._core_ready = True
 
     debug_trace("InitCompleted", "register_message_bindings")
-    control._router = MessageRouter(core, control._invoke_on_ui)
-    register_message_bindings(control._bindings, control._router)
-    control._on_web_message_received = lambda _s, ea: control._router.handle_raw(
+    router = MessageRouter(core, control._invoke_on_ui)
+    control._router = router
+    register_message_bindings(control._bindings, router)
+    control._on_web_message_received = lambda _s, ea: router.handle_raw(
         ea.WebMessageAsJson
     )
     control._on_navigation_starting = lambda _s, ea: _on_navigation_starting(
@@ -288,7 +284,7 @@ def _configure_initialized_core(control, core):
 
 
 def configure_settings(core, settings):
-    # type: (CoreWebView2, WebViewSettings) -> None
+    # type: (Any, WebViewSettings) -> None
     s = core.Settings
     s.IsScriptEnabled = settings.script_enabled
     s.IsWebMessageEnabled = settings.web_message_enabled
@@ -345,7 +341,7 @@ def _log_session(session):
 
 
 def _create_environment_options(session):
-    # type: (WebViewSession) -> CoreWebView2EnvironmentOptions
+    # type: (WebViewSession) -> Any
     options = CoreWebView2EnvironmentOptions()
     args = [_UNIQUE_WINDOW_CLASS_ARGUMENT]
     if session.additional_browser_arguments:
@@ -357,7 +353,7 @@ def _create_environment_options(session):
 
 
 def _resolve_start_url(session, core):
-    # type: (WebViewSession, CoreWebView2) -> str
+    # type: (WebViewSession, Any) -> str
     content = session.content
     if isinstance(content, RemoteContent):
         return content.start_url
@@ -381,12 +377,12 @@ def _resolve_start_url(session, core):
 
 
 def _on_navigation_starting(session, ea):
-    # type: (WebViewSession, CoreWebView2NavigationStartingEventArgs) -> None
+    # type: (WebViewSession, Any) -> None
     session.logger.info("NavigationStarting: %s", ea.Uri)
 
 
 def _on_navigation_completed(session, ea):
-    # type: (WebViewSession, CoreWebView2NavigationCompletedEventArgs) -> None
+    # type: (WebViewSession, Any) -> None
     if ea.IsSuccess:
         session.logger.info("NavigationCompleted successfully")
         return

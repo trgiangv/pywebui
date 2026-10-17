@@ -7,14 +7,14 @@ import sys
 
 import System
 
-PY2 = sys.version_info[0] == 2
-PY3 = sys.version_info[0] == 3
-IRONPY = ".net" in sys.version.lower()
-IRONPY2 = PY2 and IRONPY
-IRONPY3 = PY3 and IRONPY
-CPYTHON = PY3 and not IRONPY
-NETCORE = System.Environment.Version.Major >= 8
-NETFRAMEWORK = not NETCORE
+PY2 = sys.version_info[0] == 2  # type: bool
+PY3 = sys.version_info[0] == 3  # type: bool
+IRONPY = ".net" in sys.version.lower()  # type: bool
+IRONPY2 = PY2 and IRONPY  # type: bool
+IRONPY3 = PY3 and IRONPY  # type: bool
+CPYTHON = PY3 and not IRONPY  # type: bool
+NETCORE = System.Environment.Version.Major >= 8  # type: bool
+NETFRAMEWORK = not NETCORE  # type: bool
 
 if PY3:
     __builtins__["unicode"] = str
@@ -22,25 +22,29 @@ if PY3:
 if PY2:
     import _winreg as winreg  # pyright: ignore[reportMissingImports]
     import ConfigParser as configparser  # pyright: ignore[reportMissingImports]
-    from collections import Iterable, Callable  # pyright: ignore[reportAttributeAccessIssue]
     import urllib2  # pyright: ignore[reportMissingImports]
     from urlparse import urlparse  # pyright: ignore[reportMissingImports]
 elif PY3:
     import winreg as winreg
     import configparser as configparser
-    from collections.abc import Iterable, Callable
     import urllib.request as urllib_request
     from urllib.parse import urlparse
 
-if CPYTHON:
-    from typing import Any, Callable as TypingCallable, Dict, List, Optional, Union
+try:
+    from typing import TYPE_CHECKING
+except ImportError:
+    TYPE_CHECKING = False
+
+if TYPE_CHECKING:
+    from typing import Any, Callable, Dict, List, Optional, Union
 else:
-    Any = object
-    TypingCallable = object
-    Dict = dict
-    List = list
-    Optional = object
-    Union = object
+    # Runtime, including IronPython 2.7 / 3.4 (no typing module). Subscript
+    # must succeed so aliases like Callable[[], None] can be assigned at import.
+    class _Type(object):
+        def __getitem__(self, _item):
+            return self
+
+    Any = Callable = Dict = List = Optional = Union = _Type()
 
 safe_strtype = str
 if PY2:

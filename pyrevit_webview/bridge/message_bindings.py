@@ -11,7 +11,7 @@ from pyrevit_webview.compat import Callable, Dict, List, Any
 from pyrevit_webview.log import debug_trace
 
 
-INVOKE_MESSAGE_TYPE = "invoke"
+INVOKE_MESSAGE_TYPE = "invoke"  # type: str
 
 
 def register_message_bindings(bindings, router):
@@ -40,7 +40,7 @@ def _make_invoke_handler(methods, router):
     # type: (Dict[str, Callable], MessageRouter) -> Callable
 
     def handle_invoke(message):
-        # type: (dict) -> None
+        # type: (Dict[str, Any]) -> None
         request_id = message.get("id")
         method_name = message.get("method")
         params = _normalize_params(message.get("params"))
@@ -76,7 +76,7 @@ def _normalize_params(params):
 
 
 def _invoke_binding_method(router, request_id, method, method_name, params):
-    # type: (MessageRouter, str, Callable, str, list) -> None
+    # type: (MessageRouter, str, Callable, str, List[Any]) -> None
     label = getattr(method, "__name__", method_name)
     debug_trace("handle_invoke", "enter {0}".format(label))
     try:
@@ -90,7 +90,7 @@ def _invoke_binding_method(router, request_id, method, method_name, params):
 
 
 def _validate_argument_count(method, method_name, params):
-    # type: (Callable, str, list) -> None
+    # type: (Callable, str, List[Any]) -> None
     """Fail with a useful bridge error before invoking a method with bad arity.
 
     Some CLR callables and decorators do not expose an inspectable signature; those

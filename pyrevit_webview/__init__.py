@@ -11,12 +11,12 @@ Public surface (keep small)::
 Bridge uses ``postMessage`` / ``MessageRouter`` — no COM host objects.
 """
 
-from __future__ import print_function, division
+from __future__ import division, print_function
 
 import os
 
 from pyrevit_webview.bridge.binding import Bindable, bridge_callable
-from pyrevit_webview.bridge.message_router import MessageRouter, RESPONSE_EVENT
+from pyrevit_webview.bridge.message_router import RESPONSE_EVENT, MessageRouter
 from pyrevit_webview.host.control import WebViewControl
 from pyrevit_webview.host.session import (
     PackagedContent,
@@ -25,8 +25,8 @@ from pyrevit_webview.host.session import (
     WebViewSettings,
 )
 
-LIB_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-VERSION = "0.6.0"
+LIB_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # type: str
+VERSION = "0.6.0"  # type: str
 
 __all__ = [
     "Bindable",

@@ -3,11 +3,11 @@
 
 from __future__ import print_function, division
 
-from pyrevit_webview.compat import Any, Callable
+from pyrevit_webview.compat import Any, Callable, Optional
 from pyrevit_webview.dotnet import load_bin
 from pyrevit_webview.log import debug_trace
 
-_main_thread_id = None
+_main_thread_id = None  # type: Optional[int]
 
 
 def ensure_revit_adapter():
