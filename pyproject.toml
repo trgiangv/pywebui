@@ -1,0 +1,13 @@
+[project]
+name = "pyrevit-webview"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.pyright]
+pythonVersion = "3.12"
+typeCheckingMode = "basic"
+include = ["pyrevit_webview"]
+defineConstant = { CPYTHON = true }
+reportMissingImports = false
+reportMissingModuleSource = false

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>pythonnet OOB bridge test</title>
+  <style>
+    body { font-family: Consolas, monospace; margin: 16px; background: #111; color: #eee; }
+    button { margin: 4px 8px 4px 0; padding: 8px 12px; }
+    #out { white-space: pre-wrap; border: 1px solid #444; padding: 12px; min-height: 200px; }
+    .ok { color: #6f6; } .fail { color: #f66; }
+  </style>
+</head>
+<body>
+  <h1>pythonnet OOB — no Revit</h1>
+  <p>Measures postMessage → Python → bridge-response latency.</p>
+  <div>
+    <button id="btnPing">Ping x1</button>
+    <button id="btnSeq">Ping x10 sequential</button>
+    <button id="btnBurst">Ping x10 burst</button>
+    <button id="btnAuto">Auto-run all</button>
+  </div>
+  <div id="out">Waiting for bridge…</div>
+  <script src="app.js"></script>
+</body>
+</html>

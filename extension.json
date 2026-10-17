@@ -1,0 +1,14 @@
+{
+    "builtin": "False",
+    "default_enabled": "True",
+    "type": "lib",
+    "rocket_mode_compatible": "True",
+    "name": "pyrevit-webview",
+    "description": "WebView2 hosting and JS bridge for pyRevit extensions",
+    "author": "trgiangv",
+    "author_profile": "https://github.com/trgiangv",
+    "url": "https://github.com/trgiangv/pyrevit-webview.git",
+    "website": "https://github.com/trgiangv/pyrevit-webview",
+    "image": "",
+    "dependencies": []
+}
