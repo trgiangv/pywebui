@@ -4,8 +4,9 @@ WebView2 + Python **postMessage** bridge for pyRevit. You own the window — Win
 
 ```python
 from pyrevit_webview import Bindable, bridge_callable, MessageRouter
-from pyrevit_webview.host import WebViewControl, WebViewSession, PackagedContent, wpf_invoke
-from pyrevit_webview.host.wpf import WebView2
+from pyrevit_webview.host import WebViewControl, WebViewSession, PackagedContent
+from pyrevit_webview.host.wpf import WebView2, wpf_invoke, wpf_when_ready
+from pyrevit_webview.adapter.revit import initialize_revit_task
 ```
 
 No custom C# bridge — Python orchestrates WebView2 via IronPython / pythonnet.

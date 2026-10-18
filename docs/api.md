@@ -4,10 +4,10 @@ Prefer **subpackages** over dumping everything on the root.
 
 | Package | Role |
 |---------|------|
-| `pyrevit_webview` | `Bindable`, `bridge_callable`, `MessageRouter` |
-| `pyrevit_webview.host` | `WebViewControl`, `WebViewSession`, content, `wpf_invoke` / `winforms_invoke` |
-| `pyrevit_webview.host.wpf` | `WebView2` (loads `bin/` then CLR type) |
-| `pyrevit_webview.host.winforms` | WinForms `WebView2` |
+| `pyrevit_webview` | `Bindable`, `bridge_callable`, `MessageRouter`, command envelope |
+| `pyrevit_webview.host` | `WebViewControl`, `WebViewSession`, content. No UI toolkit and no host app |
+| `pyrevit_webview.host.wpf` | WPF `WebView2`, `wpf_invoke`, `wpf_when_ready` |
+| `pyrevit_webview.host.winforms` | WinForms `WebView2`, `winforms_invoke`, `winforms_when_ready` |
 | `pyrevit_webview.adapter.revit` | `initialize_revit_task`, `revit_invoke_sync` |
 | `pyrevit_webview.dotnet` | `load_bin` (usually not needed — use `host.wpf`) |
 
@@ -21,9 +21,8 @@ from pyrevit_webview.host import (
     WebViewControl,
     WebViewSession,
     WebViewSettings,
-    wpf_invoke,
 )
-from pyrevit_webview.host.wpf import WebView2
+from pyrevit_webview.host.wpf import WebView2, wpf_invoke, wpf_when_ready
 
 initialize_revit_task(__revit__)
 
@@ -38,7 +37,22 @@ control = WebViewControl(
     session,
     bindings=[MyBinding()],
     invoke_on_ui=wpf_invoke(window),
+    when_ready=wpf_when_ready(webview),
 )
+```
+
+## Command envelope
+
+Used when the host owns named commands. `@bridge_callable` keeps the `invoke` / `bridge-response` protocol.
+
+| Symbol | Notes |
+|--------|-------|
+| `parse_request(raw_json)` | `{command, id, payload}`, or `None` when the message is not a request |
+| `response_message(command, id, payload=None, error=None)` | `{type: "response", command, id, payload\|error}` |
+| `event_message(command, payload)` | `{type: "event", command, payload}` |
+
+```python
+from pyrevit_webview import event_message, parse_request, response_message
 ```
 
 ## Binding
@@ -56,7 +70,8 @@ control = WebViewControl(
 | `WebViewSettings(...)` | CoreWebView2 settings |
 | `PackagedContent` / `RemoteContent` | Content source |
 | `WebViewControl` | Init, postMessage router, navigate, dispose |
-| `wpf_invoke` / `winforms_invoke` | UI-thread marshal for host callbacks |
+| `wpf_invoke` / `winforms_invoke` | UI-thread marshal. Import from `host.wpf` or `host.winforms` |
+| `wpf_when_ready` / `winforms_when_ready` | Runs browser startup after the control has a handle |
 
 ## Revit adapter
 

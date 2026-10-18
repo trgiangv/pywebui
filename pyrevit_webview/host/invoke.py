@@ -1,58 +1,24 @@
 # -*- coding: utf-8 -*-
-"""UI-thread invoke helpers for WinForms and WPF."""
+"""Wait for a caller-supplied UI invoke. Framework dispatch lives elsewhere.
+
+WPF: ``pyrevit_webview.host.wpf``. WinForms: ``pyrevit_webview.host.winforms``.
+"""
 
 from __future__ import print_function, division
 
-from pyrevit_webview.compat import Any, Callable, Optional
+from pyrevit_webview.compat import Any, Callable
 from pyrevit_webview.types import InvokeOnUi
 from pyrevit_webview.log import debug_trace
 
 
-def winforms_invoke(form):
-    # type: (Any) -> InvokeOnUi
-    """Return invoke suitable for ``Form.BeginInvoke(MethodInvoker(...))``."""
-    from System.Windows.Forms import MethodInvoker
+def invoke_on_ui_sync(invoke_on_ui, action):
+    # type: (InvokeOnUi, Callable[[], Any]) -> Any
+    """Post ``action`` through ``invoke_on_ui`` and block until it finishes.
 
-    def invoke(action):
-        # type: (Callable[[], None]) -> None
-        debug_trace("winforms_invoke.BeginInvoke", "post")
-        form.BeginInvoke(MethodInvoker(action))
-
-    return invoke
-
-
-def wpf_invoke(control):
-    # type: (Any) -> InvokeOnUi
-    """Return invoke suitable for ``Dispatcher.BeginInvoke(Action(...))``."""
-    from System import Action
-    from System.Windows.Threading import DispatcherPriority
-
-    dispatcher = control.Dispatcher
-
-    def invoke(action):
-        # type: (Callable[[], None]) -> None
-        debug_trace("wpf_invoke.BeginInvoke", "post")
-        dispatcher.BeginInvoke(DispatcherPriority.Normal, Action(action))
-
-    return invoke
-
-
-def invoke_on_ui_sync(invoke_on_ui, action, dispatcher=None):
-    # type: (InvokeOnUi, Callable[[], Any], Optional[Any]) -> Any
-    """Run *action* on the UI thread and block until it completes.
-
-    If already on the target Dispatcher (``CheckAccess``), runs inline — avoids
-    deadlock when a sync host callback is already on the UI thread.
+    The caller must already be off the UI thread. WPF and WinForms sync helpers
+    run inline when they are already on that thread.
     """
     import threading
-
-    if dispatcher is not None:
-        try:
-            if dispatcher.CheckAccess():
-                debug_trace("invoke_on_ui_sync", "inline (CheckAccess)")
-                return action()
-        except Exception:
-            pass
 
     gate = threading.Event()  # type: Any
     box = {"result": None, "error": None}  # type: dict

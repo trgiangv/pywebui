@@ -6,8 +6,8 @@ Inside Revit, WebView bridge callbacks may run on **worker threads**. Revit API 
 
 | Layer | Helper | Purpose |
 |-------|--------|---------|
-| Window UI | `host.wpf_invoke` / `host.winforms_invoke` | WebView2 control, form title, `ExecuteScriptAsync` |
-| Revit API | `revit_invoke_sync` | Document, elements, transactions |
+| Window UI | `host.wpf` or `host.winforms` | WebView2 control, form title, `ExecuteScriptAsync` |
+| Revit API | `adapter.revit.revit_invoke_sync` | Document, elements, transactions |
 
 ## 1. Extension startup (once)
 
@@ -62,8 +62,8 @@ class RevitAppBinding(Bindable):
 ## 4. Window wiring
 
 ```python
-from pyrevit_webview.host import WebViewControl, wpf_invoke
-from pyrevit_webview.host.wpf import WebView2
+from pyrevit_webview.host import WebViewControl
+from pyrevit_webview.host.wpf import WebView2, wpf_invoke, wpf_when_ready
 
 webview = WebView2()
 control = WebViewControl(
@@ -71,6 +71,7 @@ control = WebViewControl(
     session,
     bindings=[RevitAppBinding()],
     invoke_on_ui=wpf_invoke(window),
+    when_ready=wpf_when_ready(webview),
 )
 ```
 

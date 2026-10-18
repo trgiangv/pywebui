@@ -61,7 +61,7 @@ def debug_trace(where, detail=""):
     extra = ""
     if detail not in (None, ""):
         extra = " | {0}".format(detail)
-    line = "[pyrevit_webview TRACE] [{0}] {1}{2}".format(_thread_tag(), where, extra)
+    line = "[pyWebview] [{0}] {1}{2}".format(_thread_tag(), where, extra)
     try:
         print(line)
         sys.stdout.flush()

@@ -14,8 +14,9 @@
 │  • WebViewSession / settings            │
 │  • Bindable + @bridge_callable          │
 │  • MessageRouter (postMessage)          │
-│  • invoke_on_ui                         │
-│  • adapter/revit (optional)             │
+│  • invoke_on_ui (injected)              │
+│  • host/wpf or host/winforms            │
+│  • adapter/revit (optional host app)    │
 └─────────────────┬───────────────────────┘
                   │ WebMessageReceived
                   ▼

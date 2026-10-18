@@ -2,6 +2,7 @@
 """Binding layer - WebView2 host object API."""
 
 from pyrevit_webview.bridge.binding import Bindable, bridge_callable
+from pyrevit_webview.bridge.envelope import event_message, parse_request, response_message
 from pyrevit_webview.bridge.message_router import MessageRouter, RESPONSE_EVENT
 
 __all__ = [
@@ -9,4 +10,7 @@ __all__ = [
     "MessageRouter",
     "RESPONSE_EVENT",
     "bridge_callable",
+    "event_message",
+    "parse_request",
+    "response_message",
 ]

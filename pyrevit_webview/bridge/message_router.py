@@ -3,9 +3,8 @@
 
 from __future__ import print_function, division
 
-import json
-
 from pyrevit_webview.compat import Any, Callable, Dict, Optional
+from pyrevit_webview.serialize import deserialize, serialize
 from pyrevit_webview.dotnet import bootstrap_clr
 from pyrevit_webview.log import debug_trace
 
@@ -49,11 +48,11 @@ class MessageRouter(object):
     def emit(self, event_name, detail):
         # type: (str, Dict[str, Any]) -> None
         """Dispatch a ``CustomEvent`` to the frontend via ``ExecuteScriptAsync``."""
-        json_str = json.dumps(detail)
+        encoded = serialize(detail)
         script = (
             "window.dispatchEvent(new CustomEvent('{0}',"
             "{{detail:JSON.parse({1})}}));"
-        ).format(event_name, json.dumps(json_str))
+        ).format(event_name, serialize(encoded))
 
         def run():
             # type: () -> None
@@ -67,7 +66,7 @@ class MessageRouter(object):
     def _dispatch_message(self, message):
         # type: (Dict[str, Any]) -> None
         msg_type = message.get("type")
-        # Python 2 json.loads uses unicode keys; type(u"") is str on Python 3.
+        # IronPython 2 str and unicode are different types.
         if not isinstance(msg_type, (str, type(u""))):
             debug_trace(
                 _TRACE_HANDLE_RAW,
@@ -94,7 +93,7 @@ class MessageRouter(object):
 def _parse_message(raw_json):
     # type: (str) -> Optional[Dict[str, Any]]
     try:
-        message = json.loads(raw_json)
+        message = deserialize(raw_json)
     except Exception as exc:
         debug_trace(_TRACE_HANDLE_RAW, "invalid JSON: {0!r}".format(exc))
         return None

@@ -5,17 +5,16 @@ Use a live dev server while building the UI; switch to `PackagedContent` for pro
 ## Session for development
 
 ```python
-from pyrevit_webview import (
+from pyrevit_webview.host import (
     RemoteContent,
     WebViewControl,
     WebViewSession,
     WebViewSettings,
-    default_user_data_folder,
-    winforms_invoke,  # or wpf_invoke
 )
+from pyrevit_webview.host.winforms import winforms_invoke, winforms_when_ready
 
 session = WebViewSession(
-    user_data_folder=default_user_data_folder("myapp-dev"),
+    app_name="myapp-dev",
     content=RemoteContent("http://localhost:5173"),
     debug_cdp_port=9225,
     settings=WebViewSettings(dev_tools_enabled=True),
@@ -26,6 +25,7 @@ control = WebViewControl(
     session,
     bindings=[AppBinding(host)],
     invoke_on_ui=winforms_invoke(form),
+    when_ready=winforms_when_ready(webview),
     on_browser_ready=lambda c: c.show_devtools(),
 )
 ```

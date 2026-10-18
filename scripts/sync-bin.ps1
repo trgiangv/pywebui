@@ -14,7 +14,8 @@ $required = @(
     'Microsoft.Web.WebView2.Core.dll',
     'Microsoft.Web.WebView2.Wpf.dll',
     'Microsoft.Web.WebView2.WinForms.dll',
-    'Revit.Async.dll'
+    'Revit.Async.dll',
+    'Newtonsoft.Json.dll'
 )
 
 foreach ($name in $required) {

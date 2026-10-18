@@ -110,9 +110,8 @@ def _run_sta():
         WebViewControl,
         WebViewSession,
         WebViewSettings,
-        wpf_invoke,
     )
-    from pyrevit_webview.host.wpf import WebView2
+    from pyrevit_webview.host.wpf import WebView2, wpf_invoke, wpf_when_ready
     from pyrevit_webview.log import debug_trace
 
     ui_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui")
@@ -213,6 +212,7 @@ def _run_sta():
                 session,
                 bindings=[DemoBinding(self)],
                 invoke_on_ui=wpf_invoke(self),
+                when_ready=wpf_when_ready(self._webview),
             )
             self.Closed += self._on_closed
 

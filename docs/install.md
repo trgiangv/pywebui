@@ -10,7 +10,7 @@ After cloning or forking, point `extend` at your repo URL.
 
 ## Shipped .NET fallbacks
 
-Python hosts need WebView2 + Revit.Async DLLs under `pyrevit_webview/bin/`:
+Python hosts need WebView2, Revit.Async, and Newtonsoft.Json under `pyrevit_webview/bin/`:
 
 ```powershell
 ./scripts/sync-bin.ps1
@@ -25,6 +25,7 @@ If the assembly simple name is already in the AppDomain, `load_bin()` only regis
 | File | When loaded |
 |------|-------------|
 | `Revit.Async.dll` | Revit adapter (`ensure_revit_adapter`) |
+| `Newtonsoft.Json.dll` | `serialize` / `deserialize`. An already loaded Revit copy is reused |
 | `Microsoft.Web.WebView2.Core.dll` | WebView2 SDK fallback |
 | `Microsoft.Web.WebView2.WinForms.dll` | WinForms control fallback |
 | `Microsoft.Web.WebView2.Wpf.dll` | WPF control fallback |
@@ -54,5 +55,5 @@ from pyrevit_webview.host.winforms import WebView2
 
 ```powershell
 ./scripts/sync-bin.ps1
-# Expect: WebView2 + Revit.Async DLLs listed under pyrevit_webview/bin/
+# Expect: WebView2, Revit.Async, and Newtonsoft.Json listed under pyrevit_webview/bin/
 ```

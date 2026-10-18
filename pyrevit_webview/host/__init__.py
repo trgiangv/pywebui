@@ -1,19 +1,18 @@
 # -*- coding: utf-8 -*-
-"""WebView2 host: control, session, UI invoke helpers.
+"""Framework-neutral WebView2 host.
 
-Import layout::
+UI dispatch lives next to the toolkit that owns the window:
 
-    from pyrevit_webview.host import (
-        WebViewControl, WebViewSession, WebViewSettings,
-        PackagedContent, wpf_invoke,
-    )
-    from pyrevit_webview.host.wpf import WebView2
+    from pyrevit_webview.host.wpf import WebView2, wpf_invoke, wpf_when_ready
+    from pyrevit_webview.host.winforms import WebView2, winforms_invoke, winforms_when_ready
+
+Revit thread dispatch lives in ``pyrevit_webview.adapter.revit``.
 """
 
 from __future__ import print_function, division
 
 from pyrevit_webview.host.control import WebViewControl
-from pyrevit_webview.host.invoke import invoke_on_ui_sync, winforms_invoke, wpf_invoke
+from pyrevit_webview.host.invoke import invoke_on_ui_sync
 from pyrevit_webview.host.session import (
     PackagedContent,
     RemoteContent,
@@ -28,6 +27,4 @@ __all__ = [
     "WebViewSession",
     "WebViewSettings",
     "invoke_on_ui_sync",
-    "winforms_invoke",
-    "wpf_invoke",
 ]

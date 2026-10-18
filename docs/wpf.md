@@ -20,20 +20,14 @@ clr.AddReference("WindowsBase")
 
 from System.Windows import Window, WindowStartupLocation
 
-from pyrevit_webview import (
-    Bindable,
+from pyrevit_webview import Bindable, bridge_callable
+from pyrevit_webview.host import (
     PackagedContent,
     WebViewControl,
     WebViewSession,
     WebViewSettings,
-    bridge_callable,
-    default_user_data_folder,
-    ensure_webview2_wpf,
-    wpf_invoke,
 )
-
-ensure_webview2_wpf()
-from Microsoft.Web.WebView2.Wpf import WebView2
+from pyrevit_webview.host.wpf import WebView2, wpf_invoke, wpf_when_ready
 
 UI_DIST = r"C:\myapp\ui\dist"
 START_URI = "https://app.local/index.html"
@@ -67,7 +61,7 @@ class DashboardWindow(Window):
         self.Content = self._webview
 
         session = WebViewSession(
-            user_data_folder=default_user_data_folder("myapp"),
+            app_name="myapp",
             content=PackagedContent(start_uri=START_URI, content_root=UI_DIST),
             settings=WebViewSettings(dev_tools_enabled=False),
         )
@@ -77,6 +71,7 @@ class DashboardWindow(Window):
             session,
             bindings=[AppBinding(self)],
             invoke_on_ui=wpf_invoke(self),
+            when_ready=wpf_when_ready(self._webview),
         )
         self.Closed += self._on_closed
 
@@ -93,7 +88,8 @@ window.Show()
 | | WinForms | WPF |
 |---|----------|-----|
 | WebView2 package | `Microsoft.Web.WebView2.WinForms` | `Microsoft.Web.WebView2.Wpf` |
-| UI dispatch | `winforms_invoke(form)` | `wpf_invoke(window)` |
+| UI dispatch | `host.winforms.winforms_invoke` | `host.wpf.wpf_invoke` |
+| Handle ready | `winforms_when_ready` | `wpf_when_ready` |
 | Window close | `FormClosed` | `Closed` |
 
 Both use the same `WebViewSession`, `Bindable`, and `WebViewControl` API.
