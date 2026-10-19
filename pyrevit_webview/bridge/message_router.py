@@ -3,14 +3,18 @@
 
 from __future__ import print_function, division
 
-from pyrevit_webview.compat import Any, Callable, Dict, Optional
-from pyrevit_webview.serialize import deserialize, serialize
-from pyrevit_webview.dotnet import bootstrap_clr
+from pyrevit_webview.bridge.contract import EventName, InvokeField
+from pyrevit_webview.compat import TYPE_CHECKING, Callable, Dict, Optional, Union
+from pyrevit_webview.serialize import JsonValue, deserialize, serialize
+from pyrevit_webview.loader import load_clr_types
+
+if TYPE_CHECKING:
+    from Microsoft.Web.WebView2.Core import CoreWebView2
 from pyrevit_webview.log import debug_trace
 
-bootstrap_clr()
+load_clr_types()
 
-RESPONSE_EVENT = "bridge-response"  # type: str
+RESPONSE_EVENT = EventName.BRIDGE_RESPONSE  # type: str
 _TRACE_HANDLE_RAW = "MessageRouter.handle_raw"  # type: str
 
 
@@ -18,13 +22,13 @@ class MessageRouter(object):
     """Registry-based dispatcher for ``WebMessageReceived`` / ``postMessage``."""
 
     def __init__(self, core, invoke_on_ui):
-        # type: (Any, Callable[[Callable[[], None]], None]) -> None
-        self._core = core  # type: Any
+        # type: (CoreWebView2, Callable[[Callable[[], None]], None]) -> None
+        self._core = core  # type: CoreWebView2
         self._invoke_on_ui = invoke_on_ui  # type: Callable[[Callable[[], None]], None]
-        self._handlers = {}  # type: Dict[str, Callable]
+        self._handlers = {}  # type: Dict[str, Callable[[Dict[str, JsonValue]], None]]
 
     def register(self, message_type, handler):
-        # type: (str, Callable) -> None
+        # type: (str, Callable[[Dict[str, JsonValue]], None]) -> None
         self._handlers[message_type] = handler
 
     def handle_raw(self, raw_json):
@@ -36,17 +40,20 @@ class MessageRouter(object):
         self._dispatch_message(message)
 
     def respond(self, request_id, ok, data=None, error=None):
-        # type: (str, bool, Any, Optional[str]) -> None
+        # type: (str, bool, Optional[JsonValue], Optional[str]) -> None
         """Emit a request/response payload to the page."""
-        payload = {"id": request_id, "ok": ok}  # type: Dict[str, Any]
+        payload = {
+            InvokeField.ID: request_id,
+            InvokeField.OK: ok,
+        }  # type: Dict[str, Union[str, bool, JsonValue]]
         if ok:
-            payload["data"] = data
+            payload[InvokeField.DATA] = data
         else:
-            payload["error"] = error or "Unknown error"
+            payload[InvokeField.ERROR] = error or "Unknown error"
         self.emit(RESPONSE_EVENT, payload)
 
     def emit(self, event_name, detail):
-        # type: (str, Dict[str, Any]) -> None
+        # type: (str, Dict[str, JsonValue]) -> None
         """Dispatch a ``CustomEvent`` to the frontend via ``ExecuteScriptAsync``."""
         encoded = serialize(detail)
         script = (
@@ -64,8 +71,8 @@ class MessageRouter(object):
         self._invoke_on_ui(run)
 
     def _dispatch_message(self, message):
-        # type: (Dict[str, Any]) -> None
-        msg_type = message.get("type")
+        # type: (Dict[str, JsonValue]) -> None
+        msg_type = message.get(InvokeField.TYPE)
         # IronPython 2 str and unicode are different types.
         if not isinstance(msg_type, (str, type(u""))):
             debug_trace(
@@ -85,13 +92,13 @@ class MessageRouter(object):
                 _TRACE_HANDLE_RAW,
                 "handler error ({0}): {1!r}".format(msg_type, exc),
             )
-            request_id = message.get("id")
-            if request_id:
+            request_id = message.get(InvokeField.ID)
+            if isinstance(request_id, str) and request_id:
                 self.respond(request_id, ok=False, error=str(exc))
 
 
 def _parse_message(raw_json):
-    # type: (str) -> Optional[Dict[str, Any]]
+    # type: (str) -> Optional[Dict[str, JsonValue]]
     try:
         message = deserialize(raw_json)
     except Exception as exc:

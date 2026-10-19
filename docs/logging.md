@@ -11,6 +11,8 @@ logger = get_logger()  # logging.getLogger("pyrevit_webview")
 logger.info("ready")
 ```
 
+Lines look like `[pyrevit_webview] ready`. The level comes from `PYREVIT_WEBVIEW_LOG` and defaults to `INFO`. `debug_trace` writes `DEBUG` and includes the managed thread id. Set `PYREVIT_WEBVIEW_LOG=DEBUG` to see those lines.
+
 ## Per-app logger
 
 ```python

@@ -24,7 +24,7 @@ If the assembly simple name is already in the AppDomain, `load_bin()` only regis
 
 | File | When loaded |
 |------|-------------|
-| `Revit.Async.dll` | Revit adapter (`ensure_revit_adapter`) |
+| `Revit.Async.dll` | `RevitContext.initialize` |
 | `Newtonsoft.Json.dll` | `serialize` / `deserialize`. An already loaded Revit copy is reused |
 | `Microsoft.Web.WebView2.Core.dll` | WebView2 SDK fallback |
 | `Microsoft.Web.WebView2.WinForms.dll` | WinForms control fallback |
@@ -43,7 +43,7 @@ from pyrevit_webview.host.wpf import WebView2
 from pyrevit_webview.host.winforms import WebView2
 ```
 
-`WebViewControl` calls `bootstrap_clr()` internally for Core API types.
+`WebViewControl` calls `load_clr_types()` internally. That registers `bin/` and imports the WebView2 types. It does not start the CLR.
 
 ## Requirements
 

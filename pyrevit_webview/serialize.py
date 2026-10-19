@@ -1,74 +1,124 @@
 # -*- coding: utf-8 -*-
 """JSON through Newtonsoft.
 
-``load_bin`` registers ``bin/Newtonsoft.Json.dll``, or the assembly Revit
-already loaded under that name. Callers receive Python objects.
+An IronPython dict passed straight to ``SerializeObject`` is reflected as a
+CLR object, and that walk runs until the host looks stuck. Values are copied
+into ``Dictionary`` and ``List`` first. Reading uses ``JsonTextReader`` so a
+``JToken`` dynamic member is never touched.
 """
 
 from __future__ import print_function, division
 
+from pyrevit_webview.compat import Dict, List, Union
+
+JsonValue = Union[None, bool, int, float, str, List["JsonValue"], Dict[str, "JsonValue"]]
+
+_TRUNCATED_JSON = "truncated JSON"
+
 _convert = None
-_jtoken = None
+_settings = None
 
 
 def serialize(value):
-    # type: (object) -> str
-    convert, _token = _newtonsoft()
-    return convert.SerializeObject(value)
+    # type: (JsonValue) -> str
+    convert, settings = _newtonsoft()
+    return convert.SerializeObject(_clr(value), settings)  # pyright: ignore[reportCallIssue, reportArgumentType]
 
 
 def deserialize(text):
-    # type: (str) -> object
-    _convert_type, token_type = _newtonsoft()
-    try:
-        token = token_type.Parse(text)
-    except Exception as exc:
-        raise ValueError(str(exc))
-    return _pythonize(token)
+    # type: (str) -> JsonValue
+    _newtonsoft()
+    from Newtonsoft.Json import DateParseHandling, JsonTextReader, JsonToken
+    from System.IO import StringReader
+
+    reader = JsonTextReader(StringReader(text))
+    reader.DateParseHandling = getattr(DateParseHandling, "None")
+    if not reader.Read():
+        raise ValueError("empty JSON")
+    return _read(reader, JsonToken)
 
 
 def _newtonsoft():
-    global _convert, _jtoken
+    global _convert, _settings
     if _convert is None:
-        from pyrevit_webview.dotnet import load_bin
+        from pyrevit_webview.loader import load_bin
 
         load_bin()
-        from Newtonsoft.Json import JsonConvert
-        from Newtonsoft.Json.Linq import JToken
+        from Newtonsoft.Json import JsonConvert, JsonSerializerSettings, StringEscapeHandling
 
+        settings = JsonSerializerSettings()
+        settings.StringEscapeHandling = StringEscapeHandling.EscapeNonAscii
         _convert = JsonConvert
-        _jtoken = JToken
-    return _convert, _jtoken
+        _settings = settings
+    return _convert, _settings
 
 
-def _pythonize(token):
-    if token is None:
+def _clr(value):
+    """Copy a JSON value into CLR collections Newtonsoft can serialize."""
+    from System import String
+    from System.Collections.Generic import Dictionary, List
+
+    if value is None or isinstance(value, (bool, int, float)):
+        return value
+    if type(value).__name__ == "long":
+        return value
+    if isinstance(value, dict):
+        mapped = Dictionary[String, object]()
+        for key, item in value.items():
+            mapped[String(str(key))] = _clr(item)
+        return mapped
+    if isinstance(value, (list, tuple)):
+        mapped = List[object]()
+        for item in value:
+            mapped.Add(_clr(item))
+        return mapped
+    if isinstance(value, str):
+        return value
+    return str(value)
+
+
+def _is(token, kind):
+    return bool(token.Equals(kind))  # pyright: ignore[reportAttributeAccessIssue]
+
+
+def _read(reader, token_type):
+    token = reader.TokenType
+    if _is(token, token_type.Null):
         return None
-    kind = str(token.Type)
-    if kind == "Null":
-        return None
-    if kind == "Object":
-        return _pythonize_object(token)
-    if kind == "Array":
-        return _pythonize_array(token)
-    if kind == "Integer":
-        return int(str(token))
-    if kind == "Float":
-        return float(str(token))
-    if kind == "Boolean":
-        return str(token) == "True"
-    return str(token)
+    if _is(token, token_type.StartObject):
+        return _read_object(reader, token_type)
+    if _is(token, token_type.StartArray):
+        return _read_array(reader, token_type)
+    return _read_scalar(reader, token, token_type)
 
 
-def _pythonize_object(token):
+def _read_object(reader, token_type):
     result = {}
-    for prop in token.Properties():
-        result[str(prop.Name)] = _pythonize(prop.Value)
-    return result
+    while reader.Read():
+        if _is(reader.TokenType, token_type.EndObject):
+            return result
+        key = str(reader.Value)
+        if not reader.Read():
+            raise ValueError(_TRUNCATED_JSON)
+        result[key] = _read(reader, token_type)
+    raise ValueError(_TRUNCATED_JSON)
 
 
-def _pythonize_array(token):
+def _read_array(reader, token_type):
     items = []
-    for item in token:
-        items.append(_pythonize(item))
-    return items
+    while reader.Read():
+        if _is(reader.TokenType, token_type.EndArray):
+            return items
+        items.append(_read(reader, token_type))
+    raise ValueError(_TRUNCATED_JSON)
+
+
+def _read_scalar(reader, token, token_type):
+    value = reader.Value
+    if _is(token, token_type.Integer):
+        return int(str(value))
+    if _is(token, token_type.Float):
+        return float(str(value))
+    if _is(token, token_type.Boolean):
+        return bool(value)
+    return str(value)

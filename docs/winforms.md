@@ -33,7 +33,7 @@ from pyrevit_webview.host import (
     WebViewSession,
     WebViewSettings,
 )
-from pyrevit_webview.host.winforms import WebView2, winforms_invoke, winforms_when_ready
+from pyrevit_webview.host.winforms import WebView2, WinFormsUi
 
 UI_DIST = r"C:\myapp\ui\dist"
 START_URI = "https://app.local/index.html"
@@ -75,8 +75,7 @@ class DashboardForm(Form):
             self._webview,
             session,
             bindings=[AppBinding(self)],
-            invoke_on_ui=winforms_invoke(self),
-            when_ready=winforms_when_ready(self._webview),
+            ui=WinFormsUi(self, self._webview),
         )
         self.FormClosed += self._on_closed
 
@@ -92,8 +91,7 @@ form.Show()
 
 | Piece | Role |
 |-------|------|
-| `winforms_invoke(self)` | Marshals bridge callbacks and script execution to the form UI thread |
-| `winforms_when_ready(webview)` | Starts the browser after the control handle exists |
+| `WinFormsUi(self, webview)` | `post` reaches the form thread. `after_hosted` starts the browser after `HandleCreated` |
 | `PackagedContent` | Maps `https://app.local` → `UI_DIST` via WebView2 virtual host |
 | `WebViewControl.dispose()` | Detach handlers and dispose WebView2 — call on `FormClosed` |
 
@@ -103,6 +101,6 @@ Use `form.Show()` (non-modal). The host process must keep its UI message loop ru
 
 ## See also
 
-- [WPF](wpf.md) — same pattern with `wpf_invoke`
-- [Revit](revit.md) — `revit_invoke_sync` for Revit API calls
+- [WPF](wpf.md) — same pattern with `WpfUi`
+- [Revit](revit.md) — `REVIT_CONTEXT` for Revit API calls
 - [Frontend](frontend.md) — JavaScript side

@@ -4,10 +4,10 @@
 Public surface (keep small)::
 
     from pyrevit_webview import Bindable, bridge_callable, MessageRouter
-    from pyrevit_webview import parse_request, response_message, event_message
+    from pyrevit_webview import CommandRequest, parse_request, response_message, event_message
     from pyrevit_webview.host import WebViewControl, WebViewSession, PackagedContent
-    from pyrevit_webview.host.wpf import WebView2, wpf_invoke, wpf_when_ready
-    from pyrevit_webview.adapter.revit import initialize_revit_task, revit_invoke_sync
+    from pyrevit_webview.host.wpf import WebView2, WpfUi
+    from pyrevit_webview.adapter.revit import REVIT_CONTEXT
 
 Bridge uses ``postMessage`` / ``MessageRouter`` — no COM host objects.
 """
@@ -17,6 +17,14 @@ from __future__ import division, print_function
 import os
 
 from pyrevit_webview.bridge.binding import Bindable, bridge_callable
+from pyrevit_webview.bridge.contract import (
+    CommandRequest,
+    EnvelopeField,
+    EnvelopeKind,
+    EventName,
+    InvokeField,
+    InvokeKind,
+)
 from pyrevit_webview.bridge.envelope import event_message, parse_request, response_message
 from pyrevit_webview.bridge.message_router import RESPONSE_EVENT, MessageRouter
 from pyrevit_webview.host.control import WebViewControl
@@ -32,6 +40,12 @@ VERSION = "0.6.0"  # type: str
 
 __all__ = [
     "Bindable",
+    "CommandRequest",
+    "EnvelopeField",
+    "EnvelopeKind",
+    "EventName",
+    "InvokeField",
+    "InvokeKind",
     "MessageRouter",
     "PackagedContent",
     "RemoteContent",

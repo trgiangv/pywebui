@@ -3,14 +3,17 @@
 
 from __future__ import print_function, division
 
-from pyrevit_webview.compat import Callable, Dict, Optional
+from pyrevit_webview.compat import Callable, Dict, Optional, Union, cast
+from pyrevit_webview.serialize import JsonValue
+
+BridgeMethod = Callable[..., JsonValue]
 
 BRIDGE_CALLABLE_ATTR = "__bridge_callable__"  # type: str
 BRIDGE_CALLABLE_NAME_ATTR = "__bridge_callable_name__"  # type: str
 
 
 def bridge_callable(method_name=None):
-    # type: (Optional[str]) -> Callable
+    # type: (Optional[Union[str, BridgeMethod]]) -> Union[BridgeMethod, Callable[[BridgeMethod], BridgeMethod]]
     """Mark a method as callable from the WebView frontend.
 
     Usage::
@@ -21,7 +24,7 @@ def bridge_callable(method_name=None):
     """
 
     def decorator(fn):
-        # type: (Callable) -> Callable
+        # type: (BridgeMethod) -> BridgeMethod
         setattr(fn, BRIDGE_CALLABLE_ATTR, True)
         if method_name is not None:
             setattr(fn, BRIDGE_CALLABLE_NAME_ATTR, method_name)
@@ -42,9 +45,9 @@ class Bindable(object):
     parent = None  # type: Optional[Bindable]
 
     def binding_methods(self):
-        # type: () -> Dict[str, Callable]
+        # type: () -> Dict[str, BridgeMethod]
         """Return ``{frontendMethodName: callable}`` for decorated methods."""
-        methods = {}  # type: Dict[str, Callable]
+        methods = {}  # type: Dict[str, BridgeMethod]
         for key in dir(self):
             if key.startswith("_"):
                 continue
@@ -56,5 +59,5 @@ class Bindable(object):
             frontend_name = getattr(member, BRIDGE_CALLABLE_NAME_ATTR, None)
             if frontend_name is None:
                 frontend_name = key
-            methods[frontend_name] = member
+            methods[frontend_name] = cast(BridgeMethod, member)
         return methods

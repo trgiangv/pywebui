@@ -25,7 +25,7 @@ Run
   py -3 tests/pythonnet_oob/run_wpf_bridge_test.py
 
 Optional env:
-  PYREVIT_WEBVIEW_TRACE=1   (default on via log.TRACE_ENABLED)
+  PYREVIT_WEBVIEW_LOG=DEBUG  library diagnostics (default INFO)
   OOB_AUTO_CLOSE=1          close window after AUTO_DONE (default 1)
   OOB_TIMEOUT_SEC=120
 """
@@ -36,6 +36,7 @@ import os
 import sys
 import time
 import traceback
+import types
 
 
 def _repo_root():
@@ -49,7 +50,7 @@ def _prepare_sys_path():
 
 
 def _add_wpf_references(clr_module):
-    # type: (object) -> None
+    # type: (types.ModuleType) -> None
     """Load WPF assemblies by path — bare names fail under some pythonnet/netfx setups."""
     import os
 
@@ -111,7 +112,7 @@ def _run_sta():
         WebViewSession,
         WebViewSettings,
     )
-    from pyrevit_webview.host.wpf import WebView2, wpf_invoke, wpf_when_ready
+    from pyrevit_webview.host.wpf import WebView2, WpfUi
     from pyrevit_webview.log import debug_trace
 
     ui_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui")
@@ -211,8 +212,7 @@ def _run_sta():
                 self._webview,
                 session,
                 bindings=[DemoBinding(self)],
-                invoke_on_ui=wpf_invoke(self),
-                when_ready=wpf_when_ready(self._webview),
+                ui=WpfUi(self, self._webview),
             )
             self.Closed += self._on_closed
 

@@ -1,20 +1,26 @@
 # Revit / pyRevit
 
-Inside Revit, WebView bridge callbacks may run on **worker threads**. Revit API calls require **Revit's main thread** (`RevitTask`), not only WinForms/WPF `BeginInvoke`.
+Inside Revit, WebView bridge callbacks may run on a thread that cannot call the Revit API. Use `RevitContext`. Callers do not reference `RevitTask`.
 
 ## Two thread layers
 
 | Layer | Helper | Purpose |
 |-------|--------|---------|
 | Window UI | `host.wpf` or `host.winforms` | WebView2 control, form title, `ExecuteScriptAsync` |
-| Revit API | `adapter.revit.revit_invoke_sync` | Document, elements, transactions |
+| Revit API | `adapter.revit.RevitContext` | Document, elements, transactions |
+
+`post` raises one synchronous external event and returns. Use it from `WebMessageReceived`, and from a running action when the next command must be its own event.
+
+`invoke` returns the result. It waits only from a thread other than the Revit UI thread. It runs inline only while `RevitContext` is already inside its own external event. The modeless window dispatcher has the same `ManagedThreadId` and is still outside an API context, so `invoke` there raises instead of calling the API or blocking the thread that must pump the event. Both methods pass a synchronous delegate. An `async` delegate can resume outside that event after `await`.
+
+`ManagedThreadId` exists on .NET Framework 4.8 and on .NET 8. It identifies the thread. It does not mean Revit is in an API context.
 
 ## 1. Extension startup (once)
 
 ```python
-from pyrevit_webview.adapter.revit import initialize_revit_task
+from pyrevit_webview.adapter.revit import REVIT_CONTEXT
 
-initialize_revit_task(__revit__)  # UIControlledApplication / UIApplication
+REVIT_CONTEXT.initialize(__revit__)  # UIControlledApplication / UIApplication
 ```
 
 ## 2. Session
@@ -37,14 +43,13 @@ IronPython: bridge handlers may lose **module globals**. Capture deps on ``self`
 
 ```python
 from pyrevit_webview import Bindable, bridge_callable
-from pyrevit_webview.adapter.revit import revit_invoke_sync
+from pyrevit_webview.adapter.revit import REVIT_CONTEXT
 
 
 class RevitAppBinding(Bindable):
     name = "app"
 
     def __init__(self):
-        self._invoke = revit_invoke_sync
         self._uiapp = __revit__  # noqa: F821
 
     @bridge_callable("GetDocumentTitle")
@@ -54,32 +59,31 @@ class RevitAppBinding(Bindable):
         def read_title():
             return uiapp.ActiveUIDocument.Document.Title
 
-        return self._invoke(read_title)
+        return REVIT_CONTEXT.invoke(read_title)
 ```
 
-`revit_invoke_sync` runs **inline** when already on Revit main (avoids deadlock with UI invoke); otherwise marshals via `RevitTask`.
+That `invoke` is valid when the handler is not running on the Revit UI thread. A modeless WebView callback on that thread uses `post`, then sends the title with `emit` after the event runs.
 
 ## 4. Window wiring
 
 ```python
 from pyrevit_webview.host import WebViewControl
-from pyrevit_webview.host.wpf import WebView2, wpf_invoke, wpf_when_ready
+from pyrevit_webview.host.wpf import WebView2, WpfUi
 
 webview = WebView2()
 control = WebViewControl(
     webview,
     session,
     bindings=[RevitAppBinding()],
-    invoke_on_ui=wpf_invoke(window),
-    when_ready=wpf_when_ready(webview),
+    ui=WpfUi(window, webview),
 )
 ```
 
-## Shipped DLL
+## Shipped DLLs
 
-`Revit.Async.dll` is copied to `pyrevit_webview/bin/` at build time.
+`./scripts/sync-bin.ps1` copies `Revit.Async.dll` and `Newtonsoft.Json.dll` into `pyrevit_webview/bin/`. Revit reuses an assembly of the same simple name that is already loaded. The full set is in [install.md](install.md).
 
 ## See also
 
 - [API](api.md) — package layout
-- [Architecture](architecture.md) — JS → C# → Python thread flow
+- [Architecture](architecture.md) — request flow and JSON

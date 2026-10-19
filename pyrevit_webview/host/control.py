@@ -12,12 +12,12 @@ from pyrevit_webview.bridge.message_bindings import register_message_bindings
 from pyrevit_webview.bridge.message_router import MessageRouter
 from types import TracebackType
 
-from pyrevit_webview.compat import Callable, List, Optional
-from pyrevit_webview.dotnet import bootstrap_clr
+from pyrevit_webview.compat import Callable, Dict, List, Optional, Type
+from pyrevit_webview.loader import load_clr_types
 from pyrevit_webview.log import debug_trace
-from pyrevit_webview.serialize import serialize
+from pyrevit_webview.serialize import JsonValue, serialize
 
-bootstrap_clr()
+load_clr_types()
 
 from Microsoft.Web.WebView2.Core import (
     CoreWebView2,
@@ -27,7 +27,7 @@ from Microsoft.Web.WebView2.Core import (
     CoreWebView2NavigationStartingEventArgs,
     CoreWebView2WebMessageReceivedEventArgs,
 )
-from pyrevit_webview.dotnet import (
+from pyrevit_webview.loader import (
     Action,
     CoreWebView2Environment,
     CoreWebView2HostResourceAccessKind,
@@ -36,14 +36,12 @@ from pyrevit_webview.host.session import (
     PackagedContent,
     RemoteContent,
     WebViewSession,
-    WebViewSettings,
 )
-from pyrevit_webview.types import InvokeOnUi
+from pyrevit_webview.host.invoke import UiThread
 
 _UNIQUE_WINDOW_CLASS_ARGUMENT = "--edge-webview-unique-window-class"
 
 OnBrowserReady = Callable[["WebViewControl"], None]
-WhenReady = Callable[[Callable[[], None]], Callable[[], None]]
 WebMessageHandler = Callable[
     [CoreWebView2, CoreWebView2WebMessageReceivedEventArgs], None
 ]
@@ -58,8 +56,8 @@ NavigationCompletedHandler = Callable[
 class WebViewControl(object):
     """Wire WebView2 async init, bindings, and navigation into a user-owned control.
 
-    The caller supplies the framework WebView2 and a ``when_ready`` scheduler
-    from ``host.wpf`` or ``host.winforms``. This type does not import either UI stack.
+    The caller supplies the framework WebView2 and a ``WpfUi`` or ``WinFormsUi``.
+    This type does not import either UI stack.
 
     Lifecycle: construct → CoreWebView2 ready → register bindings → navigate → dispose.
     """
@@ -69,16 +67,14 @@ class WebViewControl(object):
         webview,
         session,
         bindings,
-        invoke_on_ui,
-        when_ready,
+        ui,
         on_browser_ready=None,
         on_web_message=None,
     ):
         self._webview = webview
         self._session = session  # type: WebViewSession
         self._bindings = list(bindings)  # type: List[Bindable]
-        self._invoke_on_ui = invoke_on_ui  # type: InvokeOnUi
-        self._when_ready = when_ready  # type: WhenReady
+        self._ui = ui  # type: UiThread
         self._cancel_ready = None  # type: Optional[Callable[[], None]]
         self._on_browser_ready = on_browser_ready  # type: Optional[OnBrowserReady]
         self._message_callback = on_web_message  # type: Optional[Callable[[str], None]]
@@ -90,8 +86,8 @@ class WebViewControl(object):
         self._on_navigation_starting = None  # type: Optional[NavigationStartingHandler]
         self._on_navigation_completed = None  # type: Optional[NavigationCompletedHandler]
         debug_trace("WebViewControl.__init__", "begin")
-        self._wire()
-        debug_trace("WebViewControl.__init__", "wired")
+        self._begin_startup()
+        debug_trace("WebViewControl.__init__", "startup scheduled")
 
     @property
     def webview(self):
@@ -133,7 +129,7 @@ class WebViewControl(object):
             self._webview.CoreWebView2.ExecuteScriptAsync(script)
 
     def post_json(self, message):
-        # type: (dict) -> None
+        # type: (Dict[str, JsonValue]) -> None
         """Post a JSON object with ``PostWebMessageAsJson`` on the UI thread."""
         raw = serialize(message)
 
@@ -144,10 +140,9 @@ class WebViewControl(object):
             try:
                 self._webview.CoreWebView2.PostWebMessageAsJson(raw)
             except Exception as exc:
-                print("[WebView] PostWebMessageAsJson failed: {0}".format(exc))
                 self._session.logger.warning("PostWebMessageAsJson failed: %s", exc)
 
-        self._invoke_on_ui(send)
+        self._ui.post(send)
 
     def dispose(self):
         # type: () -> None
@@ -169,8 +164,6 @@ class WebViewControl(object):
             if self._on_navigation_starting is not None:
                 core.NavigationStarting -= self._on_navigation_starting  # pyright: ignore[reportOperatorIssue]
             if self._on_navigation_completed is not None:
-                # CLR event -= is valid. The stub types the sender as Any, so it
-                # does not match NavigationCompletedHandler.
                 core.NavigationCompleted -= self._on_navigation_completed  # pyright: ignore[reportOperatorIssue]
         self._on_web_message_received = None
         self._on_navigation_starting = None
@@ -189,22 +182,22 @@ class WebViewControl(object):
                     "Error disposing WebView2 browser: %s", exc
                 )
 
-        self._invoke_on_ui(dispose_browser)
+        self._ui.post(dispose_browser)
 
     def __enter__(self):
         # type: () -> WebViewControl
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        # type: (Optional[type], Optional[BaseException], Optional[TracebackType]) -> None
+        # type: (Optional[Type[BaseException]], Optional[BaseException], Optional[TracebackType]) -> None
         self.dispose()
 
-    def _wire(self):
+    def _begin_startup(self):
         # type: () -> None
         _log_session(self._session)
         self._on_init_completed = self._on_core_init_completed
         self._webview.CoreWebView2InitializationCompleted += self._on_init_completed  # pyright: ignore[reportOperatorIssue]
-        self._cancel_ready = self._when_ready(self._start_environment)
+        self._cancel_ready = self._ui.after_hosted(self._start_environment)
 
     def _start_environment(self):
         # type: () -> None
@@ -213,11 +206,11 @@ class WebViewControl(object):
 
         debug_trace("WebViewControl._start_environment", "begin")
         user_data = ensure_user_data_folder(self._session.user_data_folder)
-        options = _create_environment_options(self._session)
+        options = self._environment_options()
         self._session.logger.info("Creating WebView2 environment...")
         env_task = CoreWebView2Environment.CreateAsync(None, user_data, options)
 
-        def check_task():
+        def on_environment_created():
             # type: () -> None
             debug_trace(
                 "CreateAsync.OnCompleted",
@@ -233,16 +226,15 @@ class WebViewControl(object):
                     debug_trace("EnsureCoreWebView2Async", "on UI invoke")
                     self._webview.EnsureCoreWebView2Async(env)
 
-                self._invoke_on_ui(ensure_core)
+                self._ui.post(ensure_core)
                 self._session.logger.info(
                     "WebView2 environment ready, initializing core..."
                 )
             except Exception as exc:
                 debug_trace("CreateAsync.OnCompleted", "FAILED: {0}".format(exc))
                 self._session.logger.exception("WebView2 env failed: %s", exc)
-                print("WebView2 env failed: {0}".format(exc))
 
-        env_task.GetAwaiter().OnCompleted(Action(check_task))
+        env_task.GetAwaiter().OnCompleted(Action(on_environment_created))
         debug_trace("WebViewControl._start_environment", "OnCompleted registered")
 
     def _on_core_init_completed(self, sender, args):
@@ -258,13 +250,102 @@ class WebViewControl(object):
 
         self._session.logger.info("CoreWebView2 ready, configuring settings...")
         try:
-            _configure_initialized_core(self, self._webview.CoreWebView2)
+            self._configure_core(self._webview.CoreWebView2)
             debug_trace("InitCompleted", "done")
         except Exception as exc:
             debug_trace("InitCompleted", "FAILED: {0!r}".format(exc))
             self._session.logger.exception("InitCompleted failed: %s", exc)
-            print("InitCompleted failed: {0}".format(exc))
             raise
+
+    def _environment_options(self):
+        # type: () -> CoreWebView2EnvironmentOptions
+        options = CoreWebView2EnvironmentOptions()
+        extra = self._session.browser_arguments()
+        parts = [_UNIQUE_WINDOW_CLASS_ARGUMENT]
+        if extra:
+            parts.append(extra)
+        options.AdditionalBrowserArguments = " ".join(parts)
+        return options
+
+    def _configure_core(self, core):
+        # type: (CoreWebView2) -> None
+        debug_trace("InitCompleted", "configure_settings")
+        self._session.settings.apply(core.Settings)
+        self._core_ready = True
+
+        debug_trace("InitCompleted", "register_message_bindings")
+        self._bind_messages(core)
+        self._on_navigation_starting = self._log_navigation_starting
+        self._on_navigation_completed = self._log_navigation_completed
+        core.NavigationStarting += self._on_navigation_starting  # pyright: ignore[reportOperatorIssue]
+        core.NavigationCompleted += self._on_navigation_completed  # pyright: ignore[reportOperatorIssue]
+
+        start_url = self._start_url(core)
+        self._session.logger.info("Navigating to %s", start_url)
+        debug_trace("InitCompleted", "Navigate {0}".format(start_url))
+        core.Navigate(start_url)
+
+        if self._on_browser_ready is not None:
+            debug_trace("InitCompleted", "on_browser_ready")
+            self._on_browser_ready(self)
+
+    def _bind_messages(self, core):
+        # type: (CoreWebView2) -> None
+        if self._message_callback is not None:
+            callback = self._message_callback
+
+            def on_message(_sender, event_args):
+                # type: (CoreWebView2, CoreWebView2WebMessageReceivedEventArgs) -> None
+                callback(event_args.WebMessageAsJson)
+
+            self._on_web_message_received = on_message
+            core.WebMessageReceived += on_message  # pyright: ignore[reportOperatorIssue]
+            return
+
+        router = MessageRouter(core, self._ui.post)
+        self._router = router
+        register_message_bindings(self._bindings, router)
+
+        def on_router_message(_sender, event_args):
+            # type: (CoreWebView2, CoreWebView2WebMessageReceivedEventArgs) -> None
+            router.handle_raw(event_args.WebMessageAsJson)
+
+        self._on_web_message_received = on_router_message
+        core.WebMessageReceived += on_router_message  # pyright: ignore[reportOperatorIssue]
+
+    def _start_url(self, core):
+        # type: (CoreWebView2) -> str
+        content = self._session.content
+        if isinstance(content, RemoteContent):
+            return content.start_url
+
+        packaged = content  # type: PackagedContent
+        folder = packaged.resolved_root()
+        if not os.path.isdir(folder):
+            self._session.logger.error("Packaged content root not found: %s", folder)
+
+        self._session.logger.info(
+            "Virtual host '%s' -> '%s'",
+            packaged.host_name(),
+            folder,
+        )
+        core.SetVirtualHostNameToFolderMapping(
+            packaged.host_name(),
+            str(folder),
+            CoreWebView2HostResourceAccessKind.Allow,
+        )
+        return packaged.start_uri
+
+    def _log_navigation_starting(self, _sender, args):
+        # type: (CoreWebView2, CoreWebView2NavigationStartingEventArgs) -> None
+        self._session.logger.info("NavigationStarting: %s", args.Uri)
+
+    def _log_navigation_completed(self, _sender, args):
+        # type: (CoreWebView2, CoreWebView2NavigationCompletedEventArgs) -> None
+        if args.IsSuccess:
+            self._session.logger.info("NavigationCompleted successfully")
+            return
+        self._session.logger.error("NavigationFailed: WebErrorStatus=%s", args.WebErrorStatus)
 
 
 def _log_core_init_failure(session, args):
@@ -273,75 +354,8 @@ def _log_core_init_failure(session, args):
     if err is not None:
         msg = err.Message
         session.logger.error("CoreWebView2 init failed: %s", msg)
-        print("CoreWebView2 init failed: {0}".format(msg))
         return
     session.logger.error("CoreWebView2 init failed: unknown error")
-    print("CoreWebView2 init failed: unknown error")
-
-
-def _bind_web_message(control, core):
-    # type: (WebViewControl, CoreWebView2) -> None
-    if control._message_callback is not None:
-        callback = control._message_callback
-
-        def on_message(_sender, event_args):
-            # type: (CoreWebView2, CoreWebView2WebMessageReceivedEventArgs) -> None
-            callback(event_args.WebMessageAsJson)
-
-        control._on_web_message_received = on_message
-        core.WebMessageReceived += on_message  # pyright: ignore[reportOperatorIssue]
-        return
-
-    router = MessageRouter(core, control._invoke_on_ui)
-    control._router = router
-    register_message_bindings(control._bindings, router)
-
-    def on_router_message(_sender, event_args):
-        # type: (CoreWebView2, CoreWebView2WebMessageReceivedEventArgs) -> None
-        router.handle_raw(event_args.WebMessageAsJson)
-
-    control._on_web_message_received = on_router_message
-    core.WebMessageReceived += on_router_message  # pyright: ignore[reportOperatorIssue]
-
-
-def _configure_initialized_core(control, core):
-    # type: (WebViewControl, CoreWebView2) -> None
-    debug_trace("InitCompleted", "configure_settings")
-    configure_settings(core, control._session.settings)
-
-    control._core_ready = True
-
-    debug_trace("InitCompleted", "register_message_bindings")
-    _bind_web_message(control, core)
-    control._on_navigation_starting = lambda _s, ea: _on_navigation_starting(
-        control._session, ea
-    )
-    control._on_navigation_completed = lambda _s, ea: _on_navigation_completed(
-        control._session, ea
-    )
-    core.NavigationStarting += control._on_navigation_starting  # pyright: ignore[reportOperatorIssue]
-    core.NavigationCompleted += control._on_navigation_completed  # pyright: ignore[reportOperatorIssue]
-
-    start_url = _resolve_start_url(control._session, core)
-    control._session.logger.info("Navigating to %s", start_url)
-    debug_trace("InitCompleted", "Navigate {0}".format(start_url))
-    core.Navigate(start_url)
-
-    if control._on_browser_ready is not None:
-        debug_trace("InitCompleted", "on_browser_ready")
-        control._on_browser_ready(control)
-
-
-def configure_settings(core, settings):
-    # type: (CoreWebView2, WebViewSettings) -> None
-    s = core.Settings
-    s.IsScriptEnabled = settings.script_enabled
-    s.IsWebMessageEnabled = settings.web_message_enabled
-    s.AreDevToolsEnabled = settings.dev_tools_enabled
-    s.AreDefaultContextMenusEnabled = settings.context_menus_enabled
-    s.IsZoomControlEnabled = settings.zoom_control_enabled
-    s.IsPinchZoomEnabled = settings.pinch_zoom_enabled
-    s.IsBuiltInErrorPageEnabled = settings.built_in_error_page_enabled
 
 
 def ensure_user_data_folder(folder_path):
@@ -389,50 +403,3 @@ def _log_session(session):
         session.logger.info("CDP http://127.0.0.1:%s", session.debug_cdp_port)
 
 
-def _create_environment_options(session):
-    # type: (WebViewSession) -> CoreWebView2EnvironmentOptions
-    options = CoreWebView2EnvironmentOptions()
-    args = [_UNIQUE_WINDOW_CLASS_ARGUMENT]
-    if session.additional_browser_arguments:
-        args.append(session.additional_browser_arguments.strip())
-    if session.debug_cdp_port:
-        args.append("--remote-debugging-port={0}".format(session.debug_cdp_port))
-    options.AdditionalBrowserArguments = " ".join(args)
-    return options
-
-
-def _resolve_start_url(session, core):
-    # type: (WebViewSession, CoreWebView2) -> str
-    content = session.content
-    if isinstance(content, RemoteContent):
-        return content.start_url
-
-    packaged = content  # type: PackagedContent
-    folder = packaged.resolved_root()
-    if not os.path.isdir(folder):
-        session.logger.error("Packaged content root not found: %s", folder)
-
-    session.logger.info(
-        "Virtual host '%s' -> '%s'",
-        packaged.host_name(),
-        folder,
-    )
-    core.SetVirtualHostNameToFolderMapping(
-        packaged.host_name(),
-        str(folder),
-        CoreWebView2HostResourceAccessKind.Allow,
-    )
-    return packaged.start_uri
-
-
-def _on_navigation_starting(session, ea):
-    # type: (WebViewSession, CoreWebView2NavigationStartingEventArgs) -> None
-    session.logger.info("NavigationStarting: %s", ea.Uri)
-
-
-def _on_navigation_completed(session, ea):
-    # type: (WebViewSession, CoreWebView2NavigationCompletedEventArgs) -> None
-    if ea.IsSuccess:
-        session.logger.info("NavigationCompleted successfully")
-        return
-    session.logger.error("NavigationFailed: WebErrorStatus=%s", ea.WebErrorStatus)

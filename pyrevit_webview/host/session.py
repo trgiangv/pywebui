@@ -7,8 +7,11 @@ import logging
 import os
 import tempfile
 
-from pyrevit_webview.compat import Optional, Union
+from pyrevit_webview.compat import TYPE_CHECKING, Optional, Union
 from pyrevit_webview.log import get_logger
+
+if TYPE_CHECKING:
+    from Microsoft.Web.WebView2.Core import CoreWebView2Settings
 
 
 class WebViewSettings(object):
@@ -32,6 +35,17 @@ class WebViewSettings(object):
         self.zoom_control_enabled = zoom_control_enabled  # type: bool
         self.pinch_zoom_enabled = pinch_zoom_enabled  # type: bool
         self.built_in_error_page_enabled = built_in_error_page_enabled  # type: bool
+
+    def apply(self, core_settings):
+        # type: (CoreWebView2Settings) -> None
+        """Copy these flags onto ``CoreWebView2.Settings``."""
+        core_settings.IsScriptEnabled = self.script_enabled
+        core_settings.IsWebMessageEnabled = self.web_message_enabled
+        core_settings.AreDevToolsEnabled = self.dev_tools_enabled
+        core_settings.AreDefaultContextMenusEnabled = self.context_menus_enabled
+        core_settings.IsZoomControlEnabled = self.zoom_control_enabled
+        core_settings.IsPinchZoomEnabled = self.pinch_zoom_enabled
+        core_settings.IsBuiltInErrorPageEnabled = self.built_in_error_page_enabled
 
 
 class RemoteContent(object):
@@ -83,6 +97,16 @@ class WebViewSession(object):
         self.additional_browser_arguments = additional_browser_arguments or ""  # type: str
         self.settings = settings or WebViewSettings()  # type: WebViewSettings
         self.logger = logger or get_logger()  # type: logging.Logger
+
+    def browser_arguments(self):
+        # type: () -> str
+        """Extra arguments for ``CoreWebView2EnvironmentOptions``."""
+        args = []
+        if self.additional_browser_arguments:
+            args.append(self.additional_browser_arguments.strip())
+        if self.debug_cdp_port:
+            args.append("--remote-debugging-port={0}".format(self.debug_cdp_port))
+        return " ".join(args)
 
 
 def _default_user_data_folder(name="pyrevit_webview"):

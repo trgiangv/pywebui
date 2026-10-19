@@ -11,7 +11,7 @@ from pyrevit_webview.host import (
     WebViewSession,
     WebViewSettings,
 )
-from pyrevit_webview.host.winforms import winforms_invoke, winforms_when_ready
+from pyrevit_webview.host.winforms import WinFormsUi
 
 session = WebViewSession(
     app_name="myapp-dev",
@@ -24,8 +24,7 @@ control = WebViewControl(
     webview,
     session,
     bindings=[AppBinding(host)],
-    invoke_on_ui=winforms_invoke(form),
-    when_ready=winforms_when_ready(webview),
+    ui=WinFormsUi(form, webview),
     on_browser_ready=lambda c: c.show_devtools(),
 )
 ```

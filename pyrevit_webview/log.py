@@ -1,39 +1,61 @@
 # -*- coding: utf-8 -*-
-"""Standard logging helpers (stdlib logging - IronPython 2.7 / CPython 3)."""
+"""One logger for the library.
+
+The line format is ``[pyrevit_webview] message``. ``PYREVIT_WEBVIEW_LOG``
+selects the level and defaults to INFO. ``debug_trace`` writes DEBUG, so
+those lines stay quiet until the level is lowered.
+"""
 
 from __future__ import print_function, division
 
 import logging
+import os
 import sys
-
-from pyrevit_webview.compat import Any
 
 LOGGER_NAME = "pyrevit_webview"  # type: str
 
-# Set True (or env PYREVIT_WEBVIEW_TRACE=1) to print thread-tagged diagnostics to stdout.
-TRACE_ENABLED = True  # type: bool
+
+class _FlushStreamHandler(logging.StreamHandler):
+    """Stream handler that flushes so a host journal sees the line."""
+
+    def emit(self, record):
+        # type: (logging.LogRecord) -> None
+        logging.StreamHandler.emit(self, record)
+        self.flush()
+
+
+def _level_from_env():
+    # type: () -> int
+    name = os.environ.get("PYREVIT_WEBVIEW_LOG", "INFO").upper()
+    level = getattr(logging, name, None)
+    if isinstance(level, int):
+        return level
+    return logging.INFO
+
+
+def _configure(logger):
+    # type: (logging.Logger) -> logging.Logger
+    if logger.handlers:
+        return logger
+    handler = _FlushStreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter("[pyrevit_webview] %(message)s"))
+    logger.addHandler(handler)
+    logger.setLevel(_level_from_env())
+    logger.propagate = False
+    return logger
 
 
 def get_logger(name=LOGGER_NAME):
     # type: (str) -> logging.Logger
-    return logging.getLogger(name)
-
-
-def _trace_enabled():
-    # type: () -> bool
-    if TRACE_ENABLED:
-        return True
-    try:
-        import os
-
-        return os.environ.get("PYREVIT_WEBVIEW_TRACE", "").strip() in ("1", "true", "True")
-    except Exception:
-        return False
+    logger = logging.getLogger(name)
+    if name == LOGGER_NAME:
+        _configure(logger)
+    return logger
 
 
 def _thread_tag():
     # type: () -> str
-    """ManagedThreadId + Python thread name (best-effort under IronPython/pythonnet)."""
+    """ManagedThreadId and Python thread name."""
     managed_id = "?"
     try:
         from System.Threading import Thread
@@ -55,15 +77,8 @@ def _thread_tag():
 
 def debug_trace(where, detail=""):
     # type: (str, str) -> None
-    """Print a one-line diagnostic; always flush so pyRevit journal/output sees it."""
-    if not _trace_enabled():
-        return
+    """Record a diagnostic on the library logger at DEBUG."""
     extra = ""
     if detail not in (None, ""):
         extra = " | {0}".format(detail)
-    line = "[pyWebview] [{0}] {1}{2}".format(_thread_tag(), where, extra)
-    try:
-        print(line)
-        sys.stdout.flush()
-    except Exception:
-        pass
+    get_logger().debug("{0} {1}{2}".format(_thread_tag(), where, extra))

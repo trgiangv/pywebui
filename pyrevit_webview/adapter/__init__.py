@@ -3,14 +3,9 @@
 
 from __future__ import print_function, division
 
-from pyrevit_webview.adapter.revit import (
-    ensure_revit_adapter,
-    initialize_revit_task,
-    revit_invoke_sync,
-)
+from pyrevit_webview.adapter.revit import RevitContext, REVIT_CONTEXT
 
 __all__ = [
-    "ensure_revit_adapter",
-    "initialize_revit_task",
-    "revit_invoke_sync",
+    "RevitContext",
+    "REVIT_CONTEXT",
 ]

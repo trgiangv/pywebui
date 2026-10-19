@@ -27,7 +27,7 @@ from pyrevit_webview.host import (
     WebViewSession,
     WebViewSettings,
 )
-from pyrevit_webview.host.wpf import WebView2, wpf_invoke, wpf_when_ready
+from pyrevit_webview.host.wpf import WebView2, WpfUi
 
 UI_DIST = r"C:\myapp\ui\dist"
 START_URI = "https://app.local/index.html"
@@ -70,8 +70,7 @@ class DashboardWindow(Window):
             self._webview,
             session,
             bindings=[AppBinding(self)],
-            invoke_on_ui=wpf_invoke(self),
-            when_ready=wpf_when_ready(self._webview),
+            ui=WpfUi(self, self._webview),
         )
         self.Closed += self._on_closed
 
@@ -88,8 +87,8 @@ window.Show()
 | | WinForms | WPF |
 |---|----------|-----|
 | WebView2 package | `Microsoft.Web.WebView2.WinForms` | `Microsoft.Web.WebView2.Wpf` |
-| UI dispatch | `host.winforms.winforms_invoke` | `host.wpf.wpf_invoke` |
-| Handle ready | `winforms_when_ready` | `wpf_when_ready` |
+| UI thread | `WinFormsUi` | `WpfUi` |
+| Browser may start | `HandleCreated` | `Loaded` |
 | Window close | `FormClosed` | `Closed` |
 
 Both use the same `WebViewSession`, `Bindable`, and `WebViewControl` API.
@@ -97,4 +96,4 @@ Both use the same `WebViewSession`, `Bindable`, and `WebViewControl` API.
 ## See also
 
 - [WinForms](winforms.md)
-- [Architecture](architecture.md) — why `invoke_on_ui` matters for script execution
+- [Architecture](architecture.md) — why `post` stays on the window thread

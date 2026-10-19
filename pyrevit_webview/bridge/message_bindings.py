@@ -7,25 +7,24 @@ import inspect
 import sys
 
 from pyrevit_webview.bridge.binding import Bindable
+from pyrevit_webview.bridge.contract import InvokeField, InvokeKind
 from pyrevit_webview.bridge.message_router import MessageRouter
-from pyrevit_webview.compat import Callable, Dict, List, Any
+from pyrevit_webview.compat import Callable, Dict, List
+from pyrevit_webview.serialize import JsonValue
 from pyrevit_webview.log import debug_trace
-
-
-INVOKE_MESSAGE_TYPE = "invoke"  # type: str
 
 
 def register_message_bindings(bindings, router):
     # type: (List[Bindable], MessageRouter) -> None
     """Register ``@bridge_callable`` methods on the message router."""
     methods = _collect_binding_methods(bindings)
-    router.register(INVOKE_MESSAGE_TYPE, _make_invoke_handler(methods, router))
+    router.register(InvokeKind.INVOKE, _make_invoke_handler(methods, router))
     debug_trace("register_message_bindings", "done count={0}".format(len(methods)))
 
 
 def _collect_binding_methods(bindings):
-    # type: (List[Bindable]) -> Dict[str, Callable]
-    methods = {}  # type: Dict[str, Callable]
+    # type: (List[Bindable]) -> Dict[str, Callable[..., JsonValue]]
+    methods = {}  # type: Dict[str, Callable[..., JsonValue]]
     for binding in bindings:
         for method_name, method in binding.binding_methods().items():
             if method_name in methods:
@@ -38,18 +37,18 @@ def _collect_binding_methods(bindings):
 
 
 def _make_invoke_handler(methods, router):
-    # type: (Dict[str, Callable], MessageRouter) -> Callable
+    # type: (Dict[str, Callable[..., JsonValue]], MessageRouter) -> Callable[[Dict[str, JsonValue]], None]
 
     def handle_invoke(message):
-        # type: (Dict[str, Any]) -> None
-        request_id = message.get("id")
-        method_name = message.get("method")
-        params = _normalize_params(message.get("params"))
+        # type: (Dict[str, JsonValue]) -> None
+        request_id = message.get(InvokeField.ID)
+        method_name = message.get(InvokeField.METHOD)
+        params = _normalize_params(message.get(InvokeField.PARAMS))
 
-        if not request_id:
+        if not isinstance(request_id, str) or not request_id:
             debug_trace("handle_invoke", "missing id")
             return
-        if not method_name:
+        if not isinstance(method_name, str) or not method_name:
             router.respond(request_id, ok=False, error="Missing method name.")
             return
 
@@ -68,7 +67,7 @@ def _make_invoke_handler(methods, router):
 
 
 def _normalize_params(params):
-    # type: (Any) -> List[Any]
+    # type: (JsonValue) -> List[JsonValue]
     if params is None:
         return []
     if isinstance(params, list):
@@ -77,7 +76,7 @@ def _normalize_params(params):
 
 
 def _invoke_binding_method(router, request_id, method, method_name, params):
-    # type: (MessageRouter, str, Callable, str, List[Any]) -> None
+    # type: (MessageRouter, str, Callable[..., JsonValue], str, List[JsonValue]) -> None
     label = getattr(method, "__name__", method_name)
     debug_trace("handle_invoke", "enter {0}".format(label))
     try:
@@ -91,7 +90,7 @@ def _invoke_binding_method(router, request_id, method, method_name, params):
 
 
 def _validate_argument_count(method, method_name, params):
-    # type: (Callable, str, List[Any]) -> None
+    # type: (Callable[..., JsonValue], str, List[JsonValue]) -> None
     """Fail with a useful bridge error before invoking a method with bad arity.
 
     Some CLR callables and decorators do not expose an inspectable signature; those

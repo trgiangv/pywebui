@@ -1,30 +1,69 @@
 # -*- coding: utf-8 -*-
-"""CLR types and assembly loader — WebView2 + Revit.Async fallbacks."""
+"""Load ``bin`` assemblies and the CLR types the host imports.
+
+The CLR runtime is already running under IronPython or pythonnet. This module
+registers DLLs and imports WebView2 / System types onto itself.
+"""
 
 from __future__ import print_function, division
 
 import os
+import types
 
-from pyrevit_webview.compat import Any
+from pyrevit_webview.compat import TYPE_CHECKING, Set, Type, cast
+
+if TYPE_CHECKING:
+    from Microsoft.Web.WebView2.Core import (
+        CoreWebView2 as _CoreWebView2,
+        CoreWebView2Environment as _CoreWebView2Environment,
+        CoreWebView2EnvironmentOptions as _CoreWebView2EnvironmentOptions,
+        CoreWebView2HostResourceAccessKind as _CoreWebView2HostResourceAccessKind,
+        CoreWebView2InitializationCompletedEventArgs as _InitArgs,
+        CoreWebView2NavigationCompletedEventArgs as _NavCompletedArgs,
+        CoreWebView2NavigationStartingEventArgs as _NavStartingArgs,
+    )
+    from Microsoft.Web.WebView2.Wpf import WebView2 as _WpfWebView2
+    from System import Action as _Action
+    from System.Windows.Threading import DispatcherPriority as _DispatcherPriority
 
 _BIN_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bin")  # type: str
 _bin_loaded = False  # type: bool
 
-# Populated by bootstrap_clr()
-Action = None  # type: Any
-DispatcherPriority = None  # type: Any
-CoreWebView2 = None  # type: Any
-CoreWebView2Environment = None  # type: Any
-CoreWebView2EnvironmentOptions = None  # type: Any
-CoreWebView2HostResourceAccessKind = None  # type: Any
-CoreWebView2InitializationCompletedEventArgs = None  # type: Any
-CoreWebView2NavigationCompletedEventArgs = None  # type: Any
-CoreWebView2NavigationStartingEventArgs = None  # type: Any
-WebView2 = None  # type: Any
+Action = None
+DispatcherPriority = None
+CoreWebView2 = None
+CoreWebView2Environment = None
+CoreWebView2EnvironmentOptions = None
+CoreWebView2HostResourceAccessKind = None
+CoreWebView2InitializationCompletedEventArgs = None
+CoreWebView2NavigationCompletedEventArgs = None
+CoreWebView2NavigationStartingEventArgs = None
+WebView2 = None
+if TYPE_CHECKING:
+    Action = cast(Type[_Action], Action)
+    DispatcherPriority = cast(Type[_DispatcherPriority], DispatcherPriority)
+    CoreWebView2 = cast(Type[_CoreWebView2], CoreWebView2)
+    CoreWebView2Environment = cast(Type[_CoreWebView2Environment], CoreWebView2Environment)
+    CoreWebView2EnvironmentOptions = cast(
+        Type[_CoreWebView2EnvironmentOptions], CoreWebView2EnvironmentOptions
+    )
+    CoreWebView2HostResourceAccessKind = cast(
+        Type[_CoreWebView2HostResourceAccessKind], CoreWebView2HostResourceAccessKind
+    )
+    CoreWebView2InitializationCompletedEventArgs = cast(
+        Type[_InitArgs], CoreWebView2InitializationCompletedEventArgs
+    )
+    CoreWebView2NavigationCompletedEventArgs = cast(
+        Type[_NavCompletedArgs], CoreWebView2NavigationCompletedEventArgs
+    )
+    CoreWebView2NavigationStartingEventArgs = cast(
+        Type[_NavStartingArgs], CoreWebView2NavigationStartingEventArgs
+    )
+    WebView2 = cast(Type[_WpfWebView2], WebView2)
 
 
 def _appdomain_names():
-    # type: () -> set
+    # type: () -> Set[str]
     from System import AppDomain
 
     names = set()
@@ -35,7 +74,7 @@ def _appdomain_names():
 
 
 def _add_reference(clr, filename, loaded):
-    # type: (Any, str, set) -> None
+    # type: (types.ModuleType, str, Set[str]) -> None
     """Bind a ``bin`` DLL, or the AppDomain assembly when that name is already loaded."""
     from pyrevit_webview.compat import IRONPY
 
@@ -71,9 +110,9 @@ def load_bin():
     _bin_loaded = True
 
 
-def bootstrap_clr():
+def load_clr_types():
     # type: () -> None
-    """Load extension bin and import CLR types used by :mod:`pyrevit_webview.host`."""
+    """Register ``bin`` DLLs, then import the CLR types stored on this module."""
     global Action, DispatcherPriority, CoreWebView2
     global CoreWebView2Environment
     global CoreWebView2EnvironmentOptions, CoreWebView2HostResourceAccessKind

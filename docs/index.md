@@ -19,7 +19,7 @@ WebView2 + Python **postMessage** bridge for pyRevit. You own the window (WinFor
 | [Install & build](install.md) | pyRevit extend, `sync-bin.ps1`, shipped DLLs |
 | [WinForms example](winforms.md) | Complete `Form` + `WebView2` + bindings |
 | [WPF example](wpf.md) | Complete `Window` + `WebView2` + bindings |
-| [Revit adapter](revit.md) | `Revit.Async`, `revit_invoke_sync` |
+| [Revit adapter](revit.md) | `RevitContext`, `post` and `invoke` |
 | [Dev server](dev-server.md) | Vite + CDP debugging |
 | [Frontend (JS)](frontend.md) | `postMessage` / `bridge-response` |
 | [Logging](logging.md) | stdlib `logging` integration |

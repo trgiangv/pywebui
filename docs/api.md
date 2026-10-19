@@ -6,25 +6,26 @@ Prefer **subpackages** over dumping everything on the root.
 |---------|------|
 | `pyrevit_webview` | `Bindable`, `bridge_callable`, `MessageRouter`, command envelope |
 | `pyrevit_webview.host` | `WebViewControl`, `WebViewSession`, content. No UI toolkit and no host app |
-| `pyrevit_webview.host.wpf` | WPF `WebView2`, `wpf_invoke`, `wpf_when_ready` |
-| `pyrevit_webview.host.winforms` | WinForms `WebView2`, `winforms_invoke`, `winforms_when_ready` |
-| `pyrevit_webview.adapter.revit` | `initialize_revit_task`, `revit_invoke_sync` |
-| `pyrevit_webview.dotnet` | `load_bin` (usually not needed — use `host.wpf`) |
+| `pyrevit_webview.host.wpf` | WPF `WebView2`, `WpfUi` |
+| `pyrevit_webview.host.winforms` | WinForms `WebView2`, `WinFormsUi` |
+| `pyrevit_webview.adapter.revit` | `RevitContext`, `REVIT_CONTEXT` |
+| `pyrevit_webview.loader` | `load_bin`, `load_clr_types` (usually not needed — use `host.wpf`) |
+| `pyrevit_webview.serialize` | Newtonsoft `serialize` / `deserialize` |
 
 ## Typical Revit script
 
 ```python
 from pyrevit_webview import Bindable, bridge_callable
-from pyrevit_webview.adapter.revit import initialize_revit_task, revit_invoke_sync
+from pyrevit_webview.adapter.revit import REVIT_CONTEXT
 from pyrevit_webview.host import (
     PackagedContent,
     WebViewControl,
     WebViewSession,
     WebViewSettings,
 )
-from pyrevit_webview.host.wpf import WebView2, wpf_invoke, wpf_when_ready
+from pyrevit_webview.host.wpf import WebView2, WpfUi
 
-initialize_revit_task(__revit__)
+REVIT_CONTEXT.initialize(__revit__)
 
 session = WebViewSession(
     content=PackagedContent(start_uri=..., content_root=...),
@@ -32,28 +33,52 @@ session = WebViewSession(
     settings=WebViewSettings(dev_tools_enabled=True),
 )
 
+webview = WebView2()
 control = WebViewControl(
-    WebView2(),
+    webview,
     session,
     bindings=[MyBinding()],
-    invoke_on_ui=wpf_invoke(window),
-    when_ready=wpf_when_ready(webview),
+    ui=WpfUi(window, webview),
 )
 ```
 
 ## Command envelope
 
-Used when the host owns named commands. `@bridge_callable` keeps the `invoke` / `bridge-response` protocol.
+Used when the host owns named commands. `@bridge_callable` keeps the invoke protocol.
 
-| Symbol | Notes |
-|--------|-------|
-| `parse_request(raw_json)` | `{command, id, payload}`, or `None` when the message is not a request |
-| `response_message(command, id, payload=None, error=None)` | `{type: "response", command, id, payload\|error}` |
-| `event_message(command, payload)` | `{type: "event", command, payload}` |
+Wire names live in `pyrevit_webview.bridge.contract`. Each value is the JSON text, so it is a dict key and a comparison.
+
+| Symbol | Wire |
+|--------|------|
+| `EnvelopeKind.REQUEST` / `RESPONSE` / `EVENT` | `"request"` / `"response"` / `"event"` |
+| `EnvelopeField.TYPE` `COMMAND` `ID` `PAYLOAD` `ERROR` `OK` | those key names |
+| `parse_request(raw_json)` | `CommandRequest` (`.command`, `.id`, `.payload`), or `None` |
+| `response_message(command, id, payload=None, error=None)` | response object. Omitted payload becomes `{ok: true}` |
+| `event_message(command, payload)` | event object, no id |
 
 ```python
-from pyrevit_webview import event_message, parse_request, response_message
+from pyrevit_webview import (
+    CommandRequest,
+    EnvelopeField,
+    EnvelopeKind,
+    event_message,
+    parse_request,
+    response_message,
+)
+
+parsed = parse_request(raw_json)
+if parsed is not None:
+    reply = response_message(parsed.command, parsed.id, payload=parsed.payload)
 ```
+
+## Invoke (`@bridge_callable`)
+
+| Symbol | Wire |
+|--------|------|
+| `InvokeKind.INVOKE` | `"invoke"` |
+| `InvokeField.TYPE` `ID` `METHOD` `PARAMS` | request keys |
+| `InvokeField.OK` `DATA` `ERROR` | `bridge-response` detail keys |
+| `EventName.BRIDGE_RESPONSE` | `"bridge-response"` (`RESPONSE_EVENT` is the same value) |
 
 ## Binding
 
@@ -70,18 +95,30 @@ from pyrevit_webview import event_message, parse_request, response_message
 | `WebViewSettings(...)` | CoreWebView2 settings |
 | `PackagedContent` / `RemoteContent` | Content source |
 | `WebViewControl` | Init, postMessage router, navigate, dispose |
-| `wpf_invoke` / `winforms_invoke` | UI-thread marshal. Import from `host.wpf` or `host.winforms` |
-| `wpf_when_ready` / `winforms_when_ready` | Runs browser startup after the control has a handle |
+| `WpfUi` / `WinFormsUi` | `post` queues on the UI thread. `call` waits. `after_hosted` starts the browser after `Loaded` or `HandleCreated` |
 
 ## Revit adapter
 
 | Symbol | Notes |
 |--------|-------|
-| `initialize_revit_task(app)` | Once on Revit main thread |
-| `revit_invoke_sync(action)` | Revit API from bridge handler; inline if already on main |
+| `REVIT_CONTEXT.initialize(app)` | Once on the Revit main thread. Records `ManagedThreadId` (.NET Framework 4.8 and .NET 8). |
+| `REVIT_CONTEXT.post(action)` | New external event, then return. WebMessage callback and command chaining. |
+| `REVIT_CONTEXT.invoke(action)` | Wait for the result from another thread. Inline only inside this gate's own event. Raises on the Revit UI thread outside that event. |
+
+## JSON
+
+| Symbol | Notes |
+|--------|-------|
+| `serialize(value)` | Python JSON value to a string. Dicts and lists are copied into CLR collections first. |
+| `deserialize(text)` | String to a Python dict, list, or scalar via `JsonTextReader`. |
+| `JsonValue` | Alias for those Python values. The envelope uses it. |
+
+Requires `Newtonsoft.Json`. See [Architecture](architecture.md#json).
 
 ## Logging
 
 ```python
 from pyrevit_webview.log import get_logger
 ```
+
+`PYREVIT_WEBVIEW_LOG` sets the level. Default is `INFO`.

@@ -31,15 +31,38 @@ elif PY3:
     from urllib.parse import urlparse
 
 if sys.version_info >= (3, 5):
-    from typing import Any, Callable, Dict, List, Optional, Union
+    from typing import (
+        TYPE_CHECKING,
+        BinaryIO,
+        Callable,
+        Dict,
+        List,
+        Optional,
+        Set,
+        Tuple,
+        Type,
+        TypeVar,
+        Union,
+        cast,
+    )
 else:
     # IronPython 2.7 / 3.4 have no typing module. Subscript must succeed so
     # aliases like Callable[[], None] can be assigned at import.
+    TYPE_CHECKING = False
+
     class _Type(object):
         def __getitem__(self, _item):
             return self
 
-    Any = Callable = Dict = List = Optional = Union = _Type()
+    class _TypeVar(object):
+        def __init__(self, name, *args, **kwargs):
+            self.__name__ = name
+
+    BinaryIO = Callable = Dict = List = Optional = Set = Tuple = Type = Union = _Type()
+    TypeVar = _TypeVar
+
+    def cast(_typ, value):
+        return value
 
 safe_strtype = str
 if PY2:
@@ -47,7 +70,7 @@ if PY2:
 
 
 def json_load_error_types():
-    # type: () -> tuple
+    # type: () -> Tuple[Type[BaseException], ...]
     decode_error = ValueError
     if PY3:
         import json
@@ -56,17 +79,17 @@ def json_load_error_types():
 
 
 def urlopen(url):
-    # type: (str) -> Any
+    # type: (str) -> BinaryIO
     if PY3:
         return urllib_request.urlopen(url)
     return urllib2.urlopen(url)
 
 
 def make_request(url, headers, data):
-    # type: (str, dict, Any) -> None
+    # type: (str, Dict[str, str], bytes) -> None
     if PY3:
-        req = urllib_request.Request(url, headers, data)
+        req = urllib_request.Request(url, data=data, headers=headers)
         urllib_request.urlopen(req).close()
         return
-    req = urllib2.Request(url, headers, data)
+    req = urllib2.Request(url, data, headers)
     urllib2.urlopen(req).close()

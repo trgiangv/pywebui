@@ -39,7 +39,7 @@ ignore = ["UP009", "UP010"]
 [tool.ruff.lint.per-file-ignores]
 # Assigned under `if PY2` so `unicode` exists. A def would still name `unicode` on 3.12.
 "pyrevit_webview/compat/__init__.py" = ["E731"]
-# Imports that must follow bootstrap_clr() / load_bin().
+# Imports that must follow load_clr_types() / load_bin().
 "pyrevit_webview/host/control.py" = ["E402"]
 "pyrevit_webview/host/winforms.py" = ["E402"]
 "pyrevit_webview/host/wpf.py" = ["E402"]
