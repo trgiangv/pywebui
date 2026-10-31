@@ -8,12 +8,14 @@ Callers use :class:`RevitContext`. ``RevitTask`` stays inside this module.
 
 from __future__ import print_function, division
 
-from pyrevit_webview.compat import TYPE_CHECKING, Callable, List, Optional, TypeVar, Union, cast
+from pyrevit_webview.compat import TYPE_CHECKING, Callable, List, Optional, TypeVar, cast
 from pyrevit_webview.loader import load_bin
 from pyrevit_webview.log import debug_trace, get_logger
 
 if TYPE_CHECKING:
-    from Autodesk.Revit.UI import UIApplication, UIControlledApplication
+    from Autodesk.Revit import ApplicationServices, DB, UI
+    from Autodesk.Revit.UI import UIApplication
+    from UIFramework import MainWindow
 
 _R = TypeVar("_R")
 
@@ -31,23 +33,71 @@ class RevitContext(object):
         # type: () -> None
         self._main_thread_id = None  # type: Optional[int]
         self._depth = 0  # type: int
+        self._application = None  # type: Optional[UIApplication]
 
     def initialize(self, application):
-        # type: (Union[UIApplication, UIControlledApplication]) -> None
+        # type: (UIApplication) -> None
         """Record the main thread and initialize Revit.Async.
 
-        Pass ``UIControlledApplication`` or ``UIApplication`` (pyRevit: ``__revit__``).
+        Pass the ``UIApplication``.
         """
         load_bin()
         from System.Threading import Thread
         from Revit.Async import RevitTask
 
         self._main_thread_id = Thread.CurrentThread.ManagedThreadId
+        self._application = application
         RevitTask.Initialize(application)
         debug_trace(
             "RevitContext.initialize",
             "main_thread_id={0}".format(self._main_thread_id),
         )
+
+    @property
+    def uiapp(self):
+        # type: () -> UIApplication
+        """The ``UIApplication`` passed to :meth:`initialize`.
+
+        Kept here so later calls do not need the application passed again.
+        """
+        if self._application is None:
+            raise RuntimeError("RevitContext.initialize has not been called")
+        return self._application
+
+    @property
+    def app(self):
+        # type: () -> ApplicationServices.Application
+        """``Autodesk.Revit.ApplicationServices.Application``."""
+        return self.uiapp.Application
+
+    @property
+    def uidoc(self):
+        # type: () -> Optional[UI.UIDocument]
+        """Active ``UI.UIDocument``. Read it at call time: the active document changes."""
+        return self.uiapp.ActiveUIDocument
+
+    @property
+    def doc(self):
+        # type: () -> Optional[DB.Document]
+        """Active ``Document``. Read it at call time, do not cache it."""
+        return self.uidoc.Document if self.uidoc is not None else None
+
+    @property
+    def version(self):
+        # type: () -> str
+        """Revit version number, for example ``"2025"``."""
+        return self.app.VersionNumber
+
+    @property
+    def main_window(self):
+        # type: () -> MainWindow
+        """Revit main window (a WPF ``Window``), for ``window.Owner``."""
+        import clr
+
+        clr.AddReference("UIFramework")
+        from UIFramework import MainWindow
+
+        return MainWindow.getMainWnd()
 
     def post(self, action):
         # type: (Callable[[], None]) -> None

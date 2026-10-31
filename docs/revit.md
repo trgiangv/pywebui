@@ -20,9 +20,10 @@ Inside Revit, WebView bridge callbacks may run on a thread that cannot call the 
 ```python
 from pyrevit_webview.adapter.revit import REVIT_CONTEXT
 
-REVIT_CONTEXT.initialize(__revit__)  # UIControlledApplication / UIApplication
+REVIT_CONTEXT.initialize(uiapp)  # UIApplication
 ```
 
+After `initialize`, `REVIT_CONTEXT` also exposes the application it was given, so later code does not need it passed again: `uiapp`, `app`, `uidoc`, `doc`, `version` (e.g. `"2025"`) and `main_window` (the Revit WPF main window, for `window.Owner`). `uidoc` and `doc` are read from the live `UIApplication` on every access; do not cache them.
 ## 2. Session
 
 ```python
