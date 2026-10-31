@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
-"""JSON through Newtonsoft.
+"""JSON for the bridge.
 
-An IronPython dict passed straight to ``SerializeObject`` is reflected as a
-CLR object, and that walk runs until the host looks stuck. Values are copied
-into ``Dictionary`` and ``List`` first. Reading uses ``JsonTextReader`` so a
-``JToken`` dynamic member is never touched.
+CPython uses the standard ``json`` module. IronPython goes through Newtonsoft:
+a dict passed straight to ``SerializeObject`` is reflected as a CLR object, and
+that walk runs until the host looks stuck. Values are copied into ``Dictionary``
+and ``List`` first. Reading uses ``JsonTextReader`` so a ``JToken`` dynamic
+member is never touched.
 """
 
 from __future__ import print_function, division
 
-from pyrevit_webview.compat import Dict, List, Union
+import json
+
+from pyrevit_webview.compat import CPYTHON, Dict, List, Union
 
 JsonValue = Union[None, bool, int, float, str, List["JsonValue"], Dict[str, "JsonValue"]]
 
@@ -21,12 +24,16 @@ _settings = None
 
 def serialize(value):
     # type: (JsonValue) -> str
+    if CPYTHON:
+        return json.dumps(value, ensure_ascii=True, separators=(",", ":"), default=str)
     convert, settings = _newtonsoft()
     return convert.SerializeObject(_clr(value), settings)  # pyright: ignore[reportCallIssue, reportArgumentType]
 
 
 def deserialize(text):
     # type: (str) -> JsonValue
+    if CPYTHON:
+        return json.loads(text)
     _newtonsoft()
     from Newtonsoft.Json import DateParseHandling, JsonTextReader, JsonToken
     from System.IO import StringReader
@@ -55,7 +62,7 @@ def _newtonsoft():
 
 def _clr(value):
     """Copy a JSON value into CLR collections Newtonsoft can serialize."""
-    from System import String
+    from System import Object, String
     from System.Collections.Generic import Dictionary, List
 
     if value is None or isinstance(value, (bool, int, float)):
@@ -63,12 +70,12 @@ def _clr(value):
     if type(value).__name__ == "long":
         return value
     if isinstance(value, dict):
-        mapped = Dictionary[String, object]()
+        mapped = Dictionary[String, Object]()
         for key, item in value.items():
             mapped[String(str(key))] = _clr(item)
         return mapped
     if isinstance(value, (list, tuple)):
-        mapped = List[object]()
+        mapped = List[Object]()
         for item in value:
             mapped.Add(_clr(item))
         return mapped

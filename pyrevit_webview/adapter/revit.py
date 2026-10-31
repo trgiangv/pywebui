@@ -107,7 +107,7 @@ class RevitContext(object):
         action: the next event starts after this handler returns.
         """
         load_bin()
-        from System import Func
+        from System import Func, Object
         from Revit.Async import RevitTask
 
         def run():
@@ -122,7 +122,7 @@ class RevitContext(object):
             return None
 
         debug_trace("RevitContext.post", "schedule")
-        RevitTask.RunAsync[object](Func[object](run))
+        RevitTask.RunAsync[Object](Func[Object](run))
 
     def invoke(self, action):
         # type: (Callable[[], _R]) -> _R
@@ -141,7 +141,7 @@ class RevitContext(object):
                 "RevitContext.invoke is on the Revit UI thread outside an external event. Use post."
             )
 
-        from System import Func
+        from System import Func, Object
         from Revit.Async import RevitTask
 
         debug_trace("RevitContext.invoke", "marshal")
@@ -164,7 +164,7 @@ class RevitContext(object):
         # The generic Func overload is the one the stub types, and its Task completes
         # only after the delegate returns. The Python result stays in result_box so it
         # does not have to cross the CLR boundary.
-        RevitTask.RunAsync[object](Func[object](run)).GetAwaiter().GetResult()
+        RevitTask.RunAsync[Object](Func[Object](run)).GetAwaiter().GetResult()
         if error_box[0] is not None:
             raise error_box[0]
         return cast(_R, result_box[0])
