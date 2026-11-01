@@ -7,8 +7,8 @@
     "description": "WebView2 hosting and JS bridge for pyRevit extensions",
     "author": "trgiangv",
     "author_profile": "https://github.com/trgiangv",
-    "url": "https://github.com/trgiangv/pyrevit-webview.git",
-    "website": "https://github.com/trgiangv/pyrevit-webview",
+    "url": "https://github.com/trgiangv/pywebui.git",
+    "website": "https://github.com/trgiangv/pywebui",
     "image": "",
     "dependencies": []
 }
