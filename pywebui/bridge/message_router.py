@@ -3,19 +3,19 @@
 
 from __future__ import print_function, division
 
-from pyrevit_webview.bridge.contract import EventName, InvokeField
-from pyrevit_webview.compat import TYPE_CHECKING, Callable, Dict, Optional, Union
-from pyrevit_webview.serialize import JsonValue, deserialize, serialize
-from pyrevit_webview.loader import load_clr_types
+from pywebui.bridge.contract import EventName, InvokeField
+from pywebui.compat import TYPE_CHECKING, Callable, Dict, Optional, Union
+from pywebui.serialize import JsonValue, deserialize, serialize
+from pywebui.loader import load_clr_types
 
 if TYPE_CHECKING:
     from Microsoft.Web.WebView2.Core import CoreWebView2
-from pyrevit_webview.log import debug_trace
+from pywebui.log import debug_trace
 
 load_clr_types()
 
 RESPONSE_EVENT = EventName.BRIDGE_RESPONSE  # type: str
-_TRACE_HANDLE_RAW = "MessageRouter.handle_raw"  # type: str
+_TRACE_HANDLE_RAW = "MessageRouter.handle_raw"
 
 
 class MessageRouter(object):

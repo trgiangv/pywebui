@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 """UI thread of the window that owns the WebView2 control.
 
-WPF: ``pyrevit_webview.host.wpf.WpfUi``.
-WinForms: ``pyrevit_webview.host.winforms.WinFormsUi``.
+WPF: ``pywebui.webview.wpf.WpfUi``.
+WinForms: ``pywebui.webview.winforms.WinFormsUi``.
 """
 
 from __future__ import print_function, division
 
 import threading
 
-from pyrevit_webview.compat import Callable, List, Optional, TypeVar, cast
-from pyrevit_webview.log import debug_trace
+from pywebui.compat import Callable, List, Optional, TypeVar, cast
+from pywebui.log import debug_trace
 
 _R = TypeVar("_R")
 

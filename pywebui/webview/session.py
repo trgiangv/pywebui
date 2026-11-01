@@ -7,8 +7,8 @@ import logging
 import os
 import tempfile
 
-from pyrevit_webview.compat import TYPE_CHECKING, Optional, Union
-from pyrevit_webview.log import get_logger
+from pywebui.compat import TYPE_CHECKING, Optional, Union
+from pywebui.log import get_logger
 
 if TYPE_CHECKING:
     from Microsoft.Web.WebView2.Core import CoreWebView2Settings
@@ -84,7 +84,7 @@ class WebViewSession(object):
         self,
         content,
         user_data_folder=None,
-        app_name="pyrevit_webview",
+        app_name="pywebui",
         debug_cdp_port=None,
         settings=None,
         logger=None,
@@ -109,7 +109,7 @@ class WebViewSession(object):
         return " ".join(args)
 
 
-def _default_user_data_folder(name="pyrevit_webview"):
+def _default_user_data_folder(name="pywebui"):
     # type: (str) -> str
     return os.path.join(tempfile.gettempdir(), name)
 

@@ -3,7 +3,7 @@
 
 from __future__ import print_function, division
 
-from pyrevit_webview.loader import load_bin
+from pywebui.loader import load_bin
 
 load_bin()
 
@@ -11,9 +11,9 @@ from Microsoft.Web.WebView2.WinForms import WebView2  # noqa: E402
 from System import EventArgs  # noqa: E402
 from System.Windows.Forms import Control  # noqa: E402
 
-from pyrevit_webview.compat import Callable
-from pyrevit_webview.host.invoke import UiThread
-from pyrevit_webview.log import debug_trace
+from pywebui.compat import Callable
+from pywebui.webview.invoke import UiThread
+from pywebui.log import debug_trace
 
 __all__ = ["WebView2", "WinFormsUi"]
 

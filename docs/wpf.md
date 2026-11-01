@@ -20,14 +20,14 @@ clr.AddReference("WindowsBase")
 
 from System.Windows import Window, WindowStartupLocation
 
-from pyrevit_webview import Bindable, bridge_callable
-from pyrevit_webview.host import (
+from pywebui import Bindable, bridge_callable
+from pywebui.webview import (
     PackagedContent,
     WebViewControl,
     WebViewSession,
     WebViewSettings,
 )
-from pyrevit_webview.host.wpf import WebView2, WpfUi
+from pywebui.webview.wpf import WebView2, WpfUi
 
 UI_DIST = r"C:\myapp\ui\dist"
 START_URI = "https://app.local/index.html"

@@ -3,16 +3,16 @@
 
 UI dispatch lives next to the toolkit that owns the window:
 
-    from pyrevit_webview.host.wpf import WebView2, WpfUi
-    from pyrevit_webview.host.winforms import WebView2, WinFormsUi
+    from pywebui.webview.wpf import WebView2, WpfUi
+    from pywebui.webview.winforms import WebView2, WinFormsUi
 
-Revit thread dispatch lives in ``pyrevit_webview.adapter.revit``.
+Revit thread dispatch lives in ``pywebui.adapter.revit``.
 """
 
 from __future__ import print_function, division
 
-from pyrevit_webview.host.control import WebViewControl
-from pyrevit_webview.host.session import (
+from pywebui.webview.control import WebViewControl
+from pywebui.webview.session import (
     PackagedContent,
     RemoteContent,
     WebViewSession,

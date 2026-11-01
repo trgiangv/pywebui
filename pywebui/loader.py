@@ -10,7 +10,7 @@ from __future__ import print_function, division
 import os
 import types
 
-from pyrevit_webview.compat import TYPE_CHECKING, Set, Type, cast
+from pywebui.compat import TYPE_CHECKING, Set, Type, cast
 
 if TYPE_CHECKING:
     from Microsoft.Web.WebView2.Core import (
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from System.Windows.Threading import DispatcherPriority as _DispatcherPriority
 
 _BIN_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bin")  # type: str
-_bin_loaded = False  # type: bool
+_bin_loaded = False
 
 Action = None
 DispatcherPriority = None
@@ -76,7 +76,7 @@ def _appdomain_names():
 def _add_reference(clr, filename, loaded):
     # type: (types.ModuleType, str, Set[str]) -> None
     """Bind a ``bin`` DLL, or the AppDomain assembly when that name is already loaded."""
-    from pyrevit_webview.compat import IRONPY
+    from pywebui.compat import IRONPY
 
     assembly_name = os.path.splitext(filename)[0]
     if assembly_name in loaded:
@@ -124,6 +124,7 @@ def load_clr_types():
         return
 
     load_bin()
+
 
     from Microsoft.Web.WebView2.Core import (
         CoreWebView2 as _CoreWebView2,

@@ -3,7 +3,7 @@
 
 from __future__ import print_function, division
 
-from pyrevit_webview.adapter.revit import RevitContext, REVIT_CONTEXT
+from pywebui.adapter.revit import RevitContext, REVIT_CONTEXT
 
 __all__ = [
     "RevitContext",

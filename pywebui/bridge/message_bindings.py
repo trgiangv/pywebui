@@ -6,12 +6,12 @@ from __future__ import print_function, division
 import inspect
 import sys
 
-from pyrevit_webview.bridge.binding import Bindable
-from pyrevit_webview.bridge.contract import InvokeField, InvokeKind
-from pyrevit_webview.bridge.message_router import MessageRouter
-from pyrevit_webview.compat import Callable, Dict, List
-from pyrevit_webview.serialize import JsonValue
-from pyrevit_webview.log import debug_trace
+from pywebui.bridge.binding import Bindable
+from pywebui.bridge.contract import InvokeField, InvokeKind
+from pywebui.bridge.message_router import MessageRouter
+from pywebui.compat import Callable, Dict, List
+from pywebui.serialize import JsonValue
+from pywebui.log import debug_trace
 
 
 def register_message_bindings(bindings, router):

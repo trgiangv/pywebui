@@ -10,7 +10,7 @@
                   │ WebViewControl (Python)
                   ▼
 ┌─────────────────────────────────────────┐
-│  pyrevit_webview (Python)               │
+│  pywebui (Python)               │
 │  • WebViewSession / settings            │
 │  • Bindable + @bridge_callable          │
 │  • MessageRouter (postMessage)          │
@@ -66,7 +66,7 @@ A host that owns named commands uses `parse_request` and `response_message` on t
 
 ## JSON
 
-`pyrevit_webview.serialize` is Newtonsoft.Json. `MessageRouter` and `parse_request` both go through it.
+`pywebui.serialize` is Newtonsoft.Json. `MessageRouter` and `parse_request` both go through it.
 
 `serialize` copies a Python dict or list into `Dictionary` / `List`, then calls `JsonConvert.SerializeObject`. An IronPython dict passed straight in is reflected as a CLR object, and that walk does not finish. Non-ASCII characters are escaped.
 

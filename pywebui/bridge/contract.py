@@ -7,51 +7,51 @@ Values are the JSON text. Use them as dict keys and as comparisons.
 
 from __future__ import division, print_function
 
-from pyrevit_webview.compat import Dict
-from pyrevit_webview.serialize import JsonValue
+from pywebui.compat import Dict
+from pywebui.serialize import JsonValue
 
 
 class EnvelopeKind(object):
     """``type`` values of the command envelope."""
 
-    REQUEST = "request"  # type: str
-    RESPONSE = "response"  # type: str
-    EVENT = "event"  # type: str
+    REQUEST = "request"
+    RESPONSE = "response"
+    EVENT = "event"
 
 
 class EnvelopeField(object):
     """Keys of a command-envelope object."""
 
-    TYPE = "type"  # type: str
-    COMMAND = "command"  # type: str
-    ID = "id"  # type: str
-    PAYLOAD = "payload"  # type: str
-    ERROR = "error"  # type: str
-    OK = "ok"  # type: str
+    TYPE = "type"
+    COMMAND = "command"
+    ID = "id"
+    PAYLOAD = "payload"
+    ERROR = "error"
+    OK = "ok"
 
 
 class InvokeKind(object):
     """``type`` value of ``@bridge_callable``."""
 
-    INVOKE = "invoke"  # type: str
+    INVOKE = "invoke"
 
 
 class InvokeField(object):
     """Keys of an invoke message and of its ``bridge-response`` detail."""
 
-    TYPE = "type"  # type: str
-    ID = "id"  # type: str
-    METHOD = "method"  # type: str
-    PARAMS = "params"  # type: str
-    OK = "ok"  # type: str
-    DATA = "data"  # type: str
-    ERROR = "error"  # type: str
+    TYPE = "type"
+    ID = "id"
+    METHOD = "method"
+    PARAMS = "params"
+    OK = "ok"
+    DATA = "data"
+    ERROR = "error"
 
 
 class EventName(object):
     """``CustomEvent`` names the library dispatches."""
 
-    BRIDGE_RESPONSE = "bridge-response"  # type: str
+    BRIDGE_RESPONSE = "bridge-response"
 
 
 class CommandRequest(object):

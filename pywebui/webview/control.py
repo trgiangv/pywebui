@@ -7,15 +7,15 @@ import io
 import os
 import shutil
 
-from pyrevit_webview.bridge.binding import Bindable
-from pyrevit_webview.bridge.message_bindings import register_message_bindings
-from pyrevit_webview.bridge.message_router import MessageRouter
+from pywebui.bridge.binding import Bindable
+from pywebui.bridge.message_bindings import register_message_bindings
+from pywebui.bridge.message_router import MessageRouter
 from types import TracebackType
 
-from pyrevit_webview.compat import Callable, Dict, List, Optional, Type
-from pyrevit_webview.loader import load_clr_types
-from pyrevit_webview.log import debug_trace
-from pyrevit_webview.serialize import JsonValue, serialize
+from pywebui.compat import Callable, Dict, List, Optional, Type
+from pywebui.loader import load_clr_types
+from pywebui.log import debug_trace
+from pywebui.serialize import JsonValue, serialize
 
 load_clr_types()
 
@@ -27,17 +27,17 @@ from Microsoft.Web.WebView2.Core import (
     CoreWebView2NavigationStartingEventArgs,
     CoreWebView2WebMessageReceivedEventArgs,
 )
-from pyrevit_webview.loader import (
+from pywebui.loader import (
     Action,
     CoreWebView2Environment,
     CoreWebView2HostResourceAccessKind,
 )
-from pyrevit_webview.host.session import (
+from pywebui.webview.session import (
     PackagedContent,
     RemoteContent,
     WebViewSession,
 )
-from pyrevit_webview.host.invoke import UiThread
+from pywebui.webview.invoke import UiThread
 
 _UNIQUE_WINDOW_CLASS_ARGUMENT = "--edge-webview-unique-window-class"
 
@@ -360,7 +360,7 @@ def _log_core_init_failure(session, args):
 
 def ensure_user_data_folder(folder_path):
     # type: (str) -> str
-    from pyrevit_webview.log import get_logger
+    from pywebui.log import get_logger
 
     folder = os.path.abspath(os.path.expanduser(folder_path))
     if _is_user_data_folder_writable(folder):

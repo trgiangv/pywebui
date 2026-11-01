@@ -3,20 +3,20 @@
 ## pyRevit lib extension
 
 ```text
-pyrevit extend lib pyrevit-webview https://github.com/trgiangv/pyrevit-webview.git
+pyrevit extend lib pyWebUI https://github.com/trgiangv/pyrevit-webview.git
 ```
 
 After cloning or forking, point `extend` at your repo URL.
 
 ## Shipped .NET fallbacks
 
-Python hosts need WebView2, Revit.Async, and Newtonsoft.Json under `pyrevit_webview/bin/`:
+Python hosts need WebView2, Revit.Async, and Newtonsoft.Json under `pywebui/bin/`:
 
 ```powershell
 ./scripts/sync-bin.ps1
 ```
 
-This restores NuGet packages and copies managed DLLs into `pyrevit_webview/bin/`. **No custom bridge DLL** — the Python package talks to WebView2 directly.
+This restores NuGet packages and copies managed DLLs into `pywebui/bin/`. **No custom bridge DLL** — the Python package talks to WebView2 directly.
 
 ## Runtime loading
 
@@ -38,9 +38,9 @@ Managed DLLs stay in `bin/`. Native `WebView2Loader.dll` follows the NuGet `runt
 Host scripts import the control from the WPF or WinForms package after `load_bin()`:
 
 ```python
-from pyrevit_webview.host.wpf import WebView2
+from pywebui.webview.wpf import WebView2
 # or
-from pyrevit_webview.host.winforms import WebView2
+from pywebui.webview.winforms import WebView2
 ```
 
 `WebViewControl` calls `load_clr_types()` internally. That registers `bin/` and imports the WebView2 types. It does not start the CLR.
@@ -55,5 +55,5 @@ from pyrevit_webview.host.winforms import WebView2
 
 ```powershell
 ./scripts/sync-bin.ps1
-# Expect: WebView2, Revit.Async, and Newtonsoft.Json listed under pyrevit_webview/bin/
+# Expect: WebView2, Revit.Async, and Newtonsoft.Json listed under pywebui/bin/
 ```

@@ -15,7 +15,7 @@ Prereqs
 -------
 - Windows + WebView2 Runtime
 - pythonnet installed into the interpreter you use
-- ``pyrevit_webview/bin/`` populated via ``scripts/sync-bin.ps1``
+- ``pywebui/bin/`` populated via ``scripts/sync-bin.ps1``
 
 Run
 ---
@@ -25,7 +25,7 @@ Run
   py -3 tests/pythonnet_oob/run_wpf_bridge_test.py
 
 Optional env:
-  PYREVIT_WEBVIEW_LOG=DEBUG  library diagnostics (default INFO)
+  PYWEBUI_LOG=DEBUG  library diagnostics (default INFO)
   OOB_AUTO_CLOSE=1          close window after AUTO_DONE (default 1)
   OOB_TIMEOUT_SEC=120
 """
@@ -105,15 +105,15 @@ def _run_sta():
     from System.Windows.Threading import DispatcherTimer
     from System import TimeSpan
 
-    from pyrevit_webview import Bindable, bridge_callable
-    from pyrevit_webview.host import (
+    from pywebui import Bindable, bridge_callable
+    from pywebui.webview import (
         PackagedContent,
         WebViewControl,
         WebViewSession,
         WebViewSettings,
     )
-    from pyrevit_webview.host.wpf import WebView2, WpfUi
-    from pyrevit_webview.log import debug_trace
+    from pywebui.webview.wpf import WebView2, WpfUi
+    from pywebui.log import debug_trace
 
     ui_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui")
     start_uri = "https://oob.bridge.local/index.html"
@@ -202,7 +202,7 @@ def _run_sta():
 
             session = WebViewSession(
                 content=PackagedContent(start_uri=start_uri, content_root=ui_dir),
-                app_name="pyrevit-webview-oob",
+                app_name="pyWebUI-oob",
                 settings=WebViewSettings(
                     dev_tools_enabled=True,
                     built_in_error_page_enabled=True,

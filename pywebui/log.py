@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """One logger for the library.
 
-The line format is ``[pyrevit_webview] message``. ``PYREVIT_WEBVIEW_LOG``
+The line format is ``[pywebui] message``. ``PYWEBUI_LOG``
 selects the level and defaults to INFO. ``debug_trace`` writes DEBUG, so
 those lines stay quiet until the level is lowered.
 """
@@ -12,7 +12,7 @@ import logging
 import os
 import sys
 
-LOGGER_NAME = "pyrevit_webview"  # type: str
+LOGGER_NAME = "pywebui"
 
 
 class _FlushStreamHandler(logging.StreamHandler):
@@ -26,7 +26,7 @@ class _FlushStreamHandler(logging.StreamHandler):
 
 def _level_from_env():
     # type: () -> int
-    name = os.environ.get("PYREVIT_WEBVIEW_LOG", "INFO").upper()
+    name = os.environ.get("PYWEBUI_LOG", "INFO").upper()
     level = getattr(logging, name, None)
     if isinstance(level, int):
         return level
@@ -38,7 +38,7 @@ def _configure(logger):
     if logger.handlers:
         return logger
     handler = _FlushStreamHandler(sys.stdout)
-    handler.setFormatter(logging.Formatter("[pyrevit_webview] %(message)s"))
+    handler.setFormatter(logging.Formatter("[pywebui] %(message)s"))
     logger.addHandler(handler)
     logger.setLevel(_level_from_env())
     logger.propagate = False

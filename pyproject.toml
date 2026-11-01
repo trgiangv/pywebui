@@ -1,5 +1,5 @@
 [project]
-name = "pyrevit-webview"
+name = "pywebui"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = []
@@ -14,7 +14,7 @@ dev = [
 [tool.basedpyright]
 pythonVersion = "3.12"
 typeCheckingMode = "basic"
-include = ["pyrevit_webview"]
+include = ["pywebui"]
 defineConstant = { CPYTHON = true }
 reportMissingImports = false
 reportMissingModuleSource = false
@@ -23,7 +23,7 @@ reportTypeCommentUsage = false
 
 [tool.ruff]
 line-length = 90
-src = ["pyrevit_webview", "tests"]
+src = ["pywebui", "tests"]
 target-version = "py312"
 
 [tool.ruff.lint]
@@ -38,12 +38,12 @@ ignore = ["UP009", "UP010"]
 
 [tool.ruff.lint.per-file-ignores]
 # Assigned under `if PY2` so `unicode` exists. A def would still name `unicode` on 3.12.
-"pyrevit_webview/compat/__init__.py" = ["E731"]
+"pywebui/compat/__init__.py" = ["E731"]
 # Imports that must follow load_clr_types() / load_bin().
-"pyrevit_webview/host/control.py" = ["E402"]
-"pyrevit_webview/host/winforms.py" = ["E402"]
-"pyrevit_webview/host/wpf.py" = ["E402"]
-"pyrevit_webview/bridge/message_router.py" = ["E402"]
+"pywebui/webview/control.py" = ["E402"]
+"pywebui/webview/winforms.py" = ["E402"]
+"pywebui/webview/wpf.py" = ["E402"]
+"pywebui/bridge/message_router.py" = ["E402"]
 
 [tool.ruff.lint.isort]
 required-imports = ["from __future__ import division, print_function"]

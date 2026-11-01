@@ -12,7 +12,7 @@ from __future__ import print_function, division
 
 import json
 
-from pyrevit_webview.compat import CPYTHON, Dict, List, Union
+from pywebui.compat import CPYTHON, Dict, List, Union
 
 JsonValue = Union[None, bool, int, float, str, List["JsonValue"], Dict[str, "JsonValue"]]
 
@@ -48,7 +48,7 @@ def deserialize(text):
 def _newtonsoft():
     global _convert, _settings
     if _convert is None:
-        from pyrevit_webview.loader import load_bin
+        from pywebui.loader import load_bin
 
         load_bin()
         from Newtonsoft.Json import JsonConvert, JsonSerializerSettings, StringEscapeHandling

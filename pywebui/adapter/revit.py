@@ -8,9 +8,9 @@ Callers use :class:`RevitContext`. ``RevitTask`` stays inside this module.
 
 from __future__ import print_function, division
 
-from pyrevit_webview.compat import TYPE_CHECKING, Callable, List, Optional, TypeVar, cast
-from pyrevit_webview.loader import load_bin
-from pyrevit_webview.log import debug_trace, get_logger
+from pywebui.compat import TYPE_CHECKING, Callable, List, Optional, TypeVar, cast
+from pywebui.loader import load_bin
+from pywebui.log import debug_trace, get_logger
 
 if TYPE_CHECKING:
     from Autodesk.Revit import ApplicationServices, DB, UI

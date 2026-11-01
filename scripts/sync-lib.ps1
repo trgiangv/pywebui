@@ -1,10 +1,10 @@
 param(
-    [string]$Destination = (Join-Path $env:APPDATA 'pyRevit\Extensions\pyrevit_webview.lib')
+    [string]$Destination = (Join-Path $env:APPDATA 'pyRevit\Extensions\pyWebUI.lib')
 )
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$package = Join-Path $root 'pyrevit_webview'
+$package = Join-Path $root 'pywebui'
 
 if (-not (Test-Path -LiteralPath $package)) {
     throw "Missing package at $package"
@@ -13,7 +13,7 @@ if (-not (Test-Path -LiteralPath $package)) {
 New-Item -ItemType Directory -Force -Path $Destination | Out-Null
 
 $copied = 0
-$skipped = New-Object System.Collections.Generic.List[string]
+$unchanged = 0
 
 function Copy-One {
     param(
@@ -21,18 +21,14 @@ function Copy-One {
         [string]$Relative
     )
     $target = Join-Path $Destination $Relative
-    $parent = Split-Path -Parent $target
-    if (-not (Test-Path -LiteralPath $parent)) {
-        New-Item -ItemType Directory -Force -Path $parent | Out-Null
+    if ((Test-Path -LiteralPath $target) -and
+        ((Get-FileHash -LiteralPath $Source).Hash -eq (Get-FileHash -LiteralPath $target).Hash)) {
+        $script:unchanged++
+        return
     }
-    try {
-        Copy-Item -LiteralPath $Source -Destination $target -Force -ErrorAction Stop
-        $script:copied++
-    }
-    catch {
-        $script:skipped.Add($Relative) | Out-Null
-        Write-Warning ("skip {0}: {1}" -f $Relative, $_.Exception.Message)
-    }
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target) | Out-Null
+    Copy-Item -LiteralPath $Source -Destination $target -Force
+    $script:copied++
 }
 
 Copy-One (Join-Path $root 'extension.json') 'extension.json'
@@ -45,8 +41,4 @@ Get-ChildItem -LiteralPath $package -Recurse -File | ForEach-Object {
     Copy-One $_.FullName $relative
 }
 
-Write-Host ("Copied {0} file(s) to {1}" -f $copied, $Destination)
-if ($skipped.Count -gt 0) {
-    Write-Host ("Skipped {0} file(s):" -f $skipped.Count)
-    $skipped | ForEach-Object { Write-Host ("  {0}" -f $_) }
-}
+Write-Host ("Copied {0} file(s), {1} unchanged, to {2}" -f $copied, $unchanged, $Destination)

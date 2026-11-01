@@ -3,6 +3,6 @@
 
 from __future__ import print_function, division
 
-from pyrevit_webview.compat import Callable
+from pywebui.compat import Callable
 
 InvokeOnUi = Callable[[Callable[[], None]], None]

@@ -3,13 +3,13 @@
 
 from __future__ import print_function, division
 
-from pyrevit_webview.compat import Callable, Dict, Optional, Union, cast
-from pyrevit_webview.serialize import JsonValue
+from pywebui.compat import Callable, Dict, Optional, Union, cast
+from pywebui.serialize import JsonValue
 
 BridgeMethod = Callable[..., JsonValue]
 
-BRIDGE_CALLABLE_ATTR = "__bridge_callable__"  # type: str
-BRIDGE_CALLABLE_NAME_ATTR = "__bridge_callable_name__"  # type: str
+BRIDGE_CALLABLE_ATTR = "__bridge_callable__"
+BRIDGE_CALLABLE_NAME_ATTR = "__bridge_callable_name__"
 
 
 def bridge_callable(method_name=None):
@@ -41,7 +41,7 @@ def bridge_callable(method_name=None):
 class Bindable(object):
     """Base class for handlers exposed to the frontend via ``postMessage``."""
 
-    name = ""  # type: str
+    name = ""
     parent = None  # type: Optional[Bindable]
 
     def binding_methods(self):

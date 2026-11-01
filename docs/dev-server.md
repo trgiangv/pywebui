@@ -5,13 +5,13 @@ Use a live dev server while building the UI; switch to `PackagedContent` for pro
 ## Session for development
 
 ```python
-from pyrevit_webview.host import (
+from pywebui.webview import (
     RemoteContent,
     WebViewControl,
     WebViewSession,
     WebViewSettings,
 )
-from pyrevit_webview.host.winforms import WinFormsUi
+from pywebui.webview.winforms import WinFormsUi
 
 session = WebViewSession(
     app_name="myapp-dev",

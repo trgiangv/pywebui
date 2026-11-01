@@ -18,7 +18,7 @@ Inside Revit, WebView bridge callbacks may run on a thread that cannot call the 
 ## 1. Extension startup (once)
 
 ```python
-from pyrevit_webview.adapter.revit import REVIT_CONTEXT
+from pywebui.adapter.revit import REVIT_CONTEXT
 
 REVIT_CONTEXT.initialize(uiapp)  # UIApplication
 ```
@@ -27,7 +27,7 @@ After `initialize`, `REVIT_CONTEXT` also exposes the application it was given, s
 ## 2. Session
 
 ```python
-from pyrevit_webview.host import PackagedContent, WebViewSession
+from pywebui.webview import PackagedContent, WebViewSession
 
 session = WebViewSession(
     content=PackagedContent(
@@ -43,8 +43,8 @@ session = WebViewSession(
 IronPython: bridge handlers may lose **module globals**. Capture deps on ``self``.
 
 ```python
-from pyrevit_webview import Bindable, bridge_callable
-from pyrevit_webview.adapter.revit import REVIT_CONTEXT
+from pywebui import Bindable, bridge_callable
+from pywebui.adapter.revit import REVIT_CONTEXT
 
 
 class RevitAppBinding(Bindable):
@@ -68,8 +68,8 @@ That `invoke` is valid when the handler is not running on the Revit UI thread. A
 ## 4. Window wiring
 
 ```python
-from pyrevit_webview.host import WebViewControl
-from pyrevit_webview.host.wpf import WebView2, WpfUi
+from pywebui.webview import WebViewControl
+from pywebui.webview.wpf import WebView2, WpfUi
 
 webview = WebView2()
 control = WebViewControl(
@@ -82,7 +82,7 @@ control = WebViewControl(
 
 ## Shipped DLLs
 
-`./scripts/sync-bin.ps1` copies `Revit.Async.dll` and `Newtonsoft.Json.dll` into `pyrevit_webview/bin/`. Revit reuses an assembly of the same simple name that is already loaded. The full set is in [install.md](install.md).
+`./scripts/sync-bin.ps1` copies `Revit.Async.dll` and `Newtonsoft.Json.dll` into `pywebui/bin/`. Revit reuses an assembly of the same simple name that is already loaded. The full set is in [install.md](install.md).
 
 ## See also
 

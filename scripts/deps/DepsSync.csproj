@@ -5,8 +5,8 @@
     <LangVersion>latest</LangVersion>
     <OutputType>Library</OutputType>
     <AssemblyName>DepsSync</AssemblyName>
-    <Description>Copies WebView2, Revit.Async, and Newtonsoft.Json into pyrevit_webview/bin.</Description>
-    <BinDir>$(MSBuildThisFileDirectory)..\..\pyrevit_webview\bin\</BinDir>
+    <Description>Copies WebView2, Revit.Async, and Newtonsoft.Json into pywebui/bin.</Description>
+    <BinDir>$(MSBuildThisFileDirectory)..\..\pywebui\bin\</BinDir>
   </PropertyGroup>
 
   <ItemGroup>

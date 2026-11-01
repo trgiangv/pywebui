@@ -26,14 +26,14 @@ clr.AddReference("System.Drawing")
 from System.Drawing import Size
 from System.Windows.Forms import DockStyle, Form
 
-from pyrevit_webview import Bindable, bridge_callable
-from pyrevit_webview.host import (
+from pywebui import Bindable, bridge_callable
+from pywebui.webview import (
     PackagedContent,
     WebViewControl,
     WebViewSession,
     WebViewSettings,
 )
-from pyrevit_webview.host.winforms import WebView2, WinFormsUi
+from pywebui.webview.winforms import WebView2, WinFormsUi
 
 UI_DIST = r"C:\myapp\ui\dist"
 START_URI = "https://app.local/index.html"

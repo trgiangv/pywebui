@@ -6,7 +6,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $project = Join-Path $PSScriptRoot 'deps/DepsSync.csproj'
-$bin = Join-Path $root 'pyrevit_webview/bin'
+$bin = Join-Path $root 'pywebui/bin'
 
 dotnet build $project -c $Configuration
 
@@ -30,7 +30,7 @@ if (-not (Test-Path $loader)) {
     throw "Missing WebView2Loader.dll at $loader"
 }
 
-Write-Host 'Shipped assemblies in pyrevit_webview/bin:'
+Write-Host 'Shipped assemblies in pywebui/bin:'
 Get-ChildItem $bin -Recurse -Filter '*.dll' | ForEach-Object {
     $relative = $_.FullName.Substring($bin.Length + 1)
     Write-Host ('  {0} ({1} bytes)' -f $relative, $_.Length)

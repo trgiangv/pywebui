@@ -4,26 +4,26 @@ Prefer **subpackages** over dumping everything on the root.
 
 | Package | Role |
 |---------|------|
-| `pyrevit_webview` | `Bindable`, `bridge_callable`, `MessageRouter`, command envelope |
-| `pyrevit_webview.host` | `WebViewControl`, `WebViewSession`, content. No UI toolkit and no host app |
-| `pyrevit_webview.host.wpf` | WPF `WebView2`, `WpfUi` |
-| `pyrevit_webview.host.winforms` | WinForms `WebView2`, `WinFormsUi` |
-| `pyrevit_webview.adapter.revit` | `RevitContext`, `REVIT_CONTEXT` |
-| `pyrevit_webview.loader` | `load_bin`, `load_clr_types` (usually not needed — use `host.wpf`) |
-| `pyrevit_webview.serialize` | Newtonsoft `serialize` / `deserialize` |
+| `pywebui` | `Bindable`, `bridge_callable`, `MessageRouter`, command envelope |
+| `pywebui.webview` | `WebViewControl`, `WebViewSession`, content. No UI toolkit and no host app |
+| `pywebui.webview.wpf` | WPF `WebView2`, `WpfUi` |
+| `pywebui.webview.winforms` | WinForms `WebView2`, `WinFormsUi` |
+| `pywebui.adapter.revit` | `RevitContext`, `REVIT_CONTEXT` |
+| `pywebui.loader` | `load_bin`, `load_clr_types` (usually not needed — use `host.wpf`) |
+| `pywebui.serialize` | Newtonsoft `serialize` / `deserialize` |
 
 ## Typical Revit script
 
 ```python
-from pyrevit_webview import Bindable, bridge_callable
-from pyrevit_webview.adapter.revit import REVIT_CONTEXT
-from pyrevit_webview.host import (
+from pywebui import Bindable, bridge_callable
+from pywebui.adapter.revit import REVIT_CONTEXT
+from pywebui.webview import (
     PackagedContent,
     WebViewControl,
     WebViewSession,
     WebViewSettings,
 )
-from pyrevit_webview.host.wpf import WebView2, WpfUi
+from pywebui.webview.wpf import WebView2, WpfUi
 
 REVIT_CONTEXT.initialize(__revit__)
 
@@ -46,7 +46,7 @@ control = WebViewControl(
 
 Used when the host owns named commands. `@bridge_callable` keeps the invoke protocol.
 
-Wire names live in `pyrevit_webview.bridge.contract`. Each value is the JSON text, so it is a dict key and a comparison.
+Wire names live in `pywebui.bridge.contract`. Each value is the JSON text, so it is a dict key and a comparison.
 
 | Symbol | Wire |
 |--------|------|
@@ -57,7 +57,7 @@ Wire names live in `pyrevit_webview.bridge.contract`. Each value is the JSON tex
 | `event_message(command, payload)` | event object, no id |
 
 ```python
-from pyrevit_webview import (
+from pywebui import (
     CommandRequest,
     EnvelopeField,
     EnvelopeKind,
@@ -84,7 +84,7 @@ if parsed is not None:
 
 | Symbol | Package |
 |--------|---------|
-| `Bindable` | `pyrevit_webview` / `bridge.binding` |
+| `Bindable` | `pywebui` / `bridge.binding` |
 | `@bridge_callable("Name")` | same |
 
 ## Host
@@ -118,7 +118,7 @@ Requires `Newtonsoft.Json`. See [Architecture](architecture.md#json).
 ## Logging
 
 ```python
-from pyrevit_webview.log import get_logger
+from pywebui.log import get_logger
 ```
 
-`PYREVIT_WEBVIEW_LOG` sets the level. Default is `INFO`.
+`PYWEBUI_LOG` sets the level. Default is `INFO`.

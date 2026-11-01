@@ -9,14 +9,14 @@ Field names are ``EnvelopeField``.
 
 from __future__ import division, print_function
 
-from pyrevit_webview.bridge.contract import (
+from pywebui.bridge.contract import (
     CommandRequest,
     EnvelopeField,
     EnvelopeKind,
 )
-from pyrevit_webview.compat import Dict, Optional, Union, cast
-from pyrevit_webview.log import get_logger
-from pyrevit_webview.serialize import JsonValue, deserialize
+from pywebui.compat import Dict, Optional, Union, cast
+from pywebui.log import get_logger
+from pywebui.serialize import JsonValue, deserialize
 
 Envelope = Dict[str, Union[str, JsonValue]]
 
