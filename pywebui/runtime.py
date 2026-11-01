@@ -5,9 +5,12 @@ Everything goes through ``System.Diagnostics.Process``, so this runs the same
 under IronPython and under CPython. The target interpreter is only started as
 a child process.
 
-The packages live in a folder of their own, ``packages_dir(tag)``, never in the
-interpreter's ``site-packages``: other tools share that one. Healing is then
-deleting the folder and installing again. An embeddable interpreter
+The packages live in a folder of their own, ``packages_dir(tag, group)``, never in the
+interpreter's ``site-packages``: other tools share that one. A group is one
+caller's set of requirements, installed and replaced as a whole, so callers with
+independent lists use different groups and never remove each other's packages.
+Every group folder the code needs must be on the interpreter's ``sys.path``
+(``embed.start(sys_path=...)``). An embeddable interpreter
 (``python312._pth``) does not put its own ``Lib/site-packages`` on ``sys.path``,
 so ``pip`` is started with that folder added.
 """
@@ -20,9 +23,13 @@ import shutil
 
 from pywebui.compat import List, Optional, Tuple
 
-# starlette 0.51 is the first with CORSMiddleware(allow_private_network=...).
+# PEP 508 strings, the form of a PEP 723 dependency. Floors are the versions current when
+# they were set; raise them when the code starts to need something newer.
 # fastapi brings starlette and pydantic, but not uvicorn.
-HTTP_REQUIREMENTS = ("fastapi", "starlette>=0.51", "uvicorn", "pydantic>=2.9")
+# packaging reads the specifiers, so it is always part of the list.
+HTTP_REQUIREMENTS = ("fastapi>=0.162.0", "uvicorn>=0.54.0", "packaging>=26.3")
+
+DEFAULT_GROUP = "pywebui"
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _CHECK_SCRIPT = os.path.join(_HERE, "_check.py")
@@ -33,10 +40,10 @@ _RUN_PIP = (
 )
 
 
-def packages_dir(tag):
-    # type: (str) -> str
-    """Where the packages for the interpreter with this ``cpXY`` tag are installed."""
-    return os.path.join(os.environ["LOCALAPPDATA"], "pyWebUI", "packages", tag)
+def packages_dir(tag, group=DEFAULT_GROUP):
+    # type: (str, str) -> str
+    """Where ``group``'s packages for the interpreter with this ``cpXY`` tag are installed."""
+    return os.path.join(os.environ["LOCALAPPDATA"], "pyWebUI", "packages", group, tag)
 
 
 def find_python(engines_dir, prefix):
@@ -75,31 +82,41 @@ def _unmet(python_exe, folder, requirements):
     code, output = _run(python_exe, ["-I", _CHECK_SCRIPT, "--site", folder] + list(requirements))
     if code != 0:
         raise RuntimeError("requirement check failed: {0}".format(output))
-    return output.split()
+    return output.splitlines()
 
 
-def ensure_packages(python_exe, requirements):
-    # type: (str, List[str]) -> Tuple[bool, str]
-    """Make ``requirements`` importable from ``packages_dir`` for ``python_exe``.
+def ensure_packages(python_exe, requirements, group=DEFAULT_GROUP):
+    # type: (str, List[str], str) -> Tuple[bool, str]
+    """Make ``requirements`` importable from ``packages_dir(tag, group)`` for ``python_exe``.
 
-    ``requirements`` are ``name`` or ``name>=minimum``. A package that is missing,
-    too old or fails to import deletes the folder and installs everything again.
+    ``requirements`` are PEP 508 strings. A package that is missing, outside its
+    specifier or fails to import installs everything again, into a staging folder
+    first: the current folder is replaced only after the new one passes the check,
+    so a failed install (offline, bad specifier) leaves a working install alone.
     Returns ``(ok, message)``; ``message`` is the pip output when it failed.
     """
-    folder = packages_dir(_tag(python_exe))
+    folder = packages_dir(_tag(python_exe), group)
     if os.path.isdir(folder) and not _unmet(python_exe, folder, requirements):
         return True, "healthy"
-    if os.path.isdir(folder):
-        shutil.rmtree(folder)
+    staging = folder + ".new"
+    if os.path.isdir(staging):
+        shutil.rmtree(staging)
     site_packages = os.path.join(os.path.dirname(python_exe), "Lib", "site-packages")
     code, output = _run(
         python_exe,
-        ["-c", _RUN_PIP, site_packages, "install", "--disable-pip-version-check", "--target", folder]
+        ["-c", _RUN_PIP, site_packages, "install", "--disable-pip-version-check", "--target", staging]
         + list(requirements),
     )
     if code != 0:
         return False, output
-    still = _unmet(python_exe, folder, requirements)
+    still = _unmet(python_exe, staging, requirements)
     if still:
         return False, "still unmet after install: {0}".format(" ".join(still))
+    previous = folder + ".old"
+    if os.path.isdir(previous):
+        shutil.rmtree(previous, ignore_errors=True)
+    if os.path.isdir(folder):
+        os.rename(folder, previous)  # fails, changing nothing, while the interpreter has the packages loaded
+    os.rename(staging, folder)
+    shutil.rmtree(previous, ignore_errors=True)
     return True, "installed {0} into {1}".format(" ".join(requirements), folder)
