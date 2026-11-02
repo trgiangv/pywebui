@@ -16,7 +16,7 @@ Python hosts need WebView2, Revit.Async, and Newtonsoft.Json under `pywebui/bin/
 ./scripts/sync-bin.ps1
 ```
 
-This restores NuGet packages and copies managed DLLs into `pywebui/bin/`. **No custom bridge DLL** — the Python package talks to WebView2 directly.
+The DLLs are committed, so `pyrevit extend lib` needs no build step. Run the script only to refresh them. It restores NuGet packages and copies managed DLLs into `pywebui/bin/`. **No custom bridge DLL** — the Python package talks to WebView2 directly.
 
 ## Runtime loading
 

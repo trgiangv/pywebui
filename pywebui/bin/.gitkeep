@@ -1,0 +1,10 @@
+# Shipped .NET fallbacks for IronPython / pythonnet hosts.
+#
+# Populate with: ./scripts/sync-bin.ps1
+#
+#   Microsoft.Web.WebView2.Core.dll
+#   Microsoft.Web.WebView2.Wpf.dll
+#   Microsoft.Web.WebView2.WinForms.dll
+#   Revit.Async.dll
+#   Newtonsoft.Json.dll
+#   runtimes/win-x64/native/WebView2Loader.dll
