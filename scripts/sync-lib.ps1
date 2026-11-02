@@ -1,5 +1,5 @@
 param(
-    [string]$Destination = (Join-Path $env:APPDATA 'pyRevit\Extensions\pyWebUI.lib')
+    [string]$Destination = (Join-Path $env:APPDATA 'pyRevit\Extensions\pywebui.lib')
 )
 
 $ErrorActionPreference = 'Stop'

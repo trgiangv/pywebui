@@ -3,7 +3,7 @@
     "default_enabled": "True",
     "type": "lib",
     "rocket_mode_compatible": "True",
-    "name": "pyWebUI",
+    "name": "pywebui",
     "description": "WebView2 hosting and JS bridge for pyRevit extensions",
     "author": "trgiangv",
     "author_profile": "https://github.com/trgiangv",

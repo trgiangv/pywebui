@@ -3,7 +3,7 @@
 ## pyRevit lib extension
 
 ```text
-pyrevit extend lib pyWebUI https://github.com/trgiangv/pywebui.git
+pyrevit extend lib pywebui https://github.com/trgiangv/pywebui.git
 ```
 
 After cloning or forking, point `extend` at your repo URL.

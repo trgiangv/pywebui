@@ -202,7 +202,7 @@ def _run_sta():
 
             session = WebViewSession(
                 content=PackagedContent(start_uri=start_uri, content_root=ui_dir),
-                app_name="pyWebUI-oob",
+                app_name="pywebui-oob",
                 settings=WebViewSettings(
                     dev_tools_enabled=True,
                     built_in_error_page_enabled=True,

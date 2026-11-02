@@ -1,4 +1,4 @@
-# pyWebUI
+# pywebui
 
 One page, two ways to host it: a **WebView2** window inside Revit, or the user's **browser** over a loopback HTTP server. Both carry the same command envelope, so the application code is written once.
 
@@ -18,7 +18,7 @@ def zoom(payload):
 | `pywebui.webview` | IronPython, CPython | `WebViewControl`, `WebViewSession`, `RemoteContent`, `wpf.WebView2` / `winforms.WebView2` |
 | `pywebui.http` | CPython only | `HttpSink`, `HttpTransport` (FastAPI + uvicorn) |
 | `pywebui.Site` / `Mode` | IronPython, CPython | `Mode.DEV` (dev server), `Mode.LOCAL` (a build folder), `Mode.SERVER` (a deployed URL). One `Site` gives WebView2 its content and the HTTP transport its origins and static folder |
-| `pywebui.runtime` | IronPython, CPython | `find_python`, `ensure_packages`: check, delete and `pip install --target` the HTTP packages for a CPython interpreter into `%LOCALAPPDATA%\pyWebUI\packages\<group>\<tag>`, through child processes. A group is one caller's set of requirements, replaced as a whole, so independent callers pass different `group` names. A missing, out-of-specifier or unimportable package heals by installing into a staging folder and swapping it in |
+| `pywebui.runtime` | IronPython, CPython | `find_python`, `ensure_packages`: check, delete and `pip install --target` the HTTP packages for a CPython interpreter into `%LOCALAPPDATA%\pywebui\packages\<group>\<tag>`, through child processes. A group is one caller's set of requirements, replaced as a whole, so independent callers pass different `group` names. A missing, out-of-specifier or unimportable package heals by installing into a staging folder and swapping it in |
 | `pywebui.embed` | IronPython, CPython | `start`, `run`: start pyRevit's pythonnet and a CPython engine inside the host process with the GIL released, then run CPython source with CLR objects as globals. Must be the first CPython runtime started in the Revit session; otherwise `RuntimeAlreadyStartedError` asks for a Revit restart |
 
 Importing `pywebui.http` under IronPython raises `UnsupportedRuntimeError`; with the packages missing it raises `MissingDependencyError` and names the `pip` command. Both subclass `ImportError`.
@@ -33,7 +33,7 @@ embed.run("print(app.Application.VersionName)", app=uiapp)
 ## Quick start
 
 ```text
-pyrevit extend lib pyWebUI https://github.com/trgiangv/pywebui.git
+pyrevit extend lib pywebui https://github.com/trgiangv/pywebui.git --branch=main
 ```
 
 ```powershell
