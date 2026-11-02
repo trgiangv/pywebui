@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 
 _BIN_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bin")  # type: str
 _bin_loaded = False
+_WPF_ASSEMBLIES = ("WindowsBase", "PresentationCore", "PresentationFramework")
 
 Action = None
 DispatcherPriority = None
@@ -125,6 +126,10 @@ def load_clr_types():
 
     load_bin()
 
+    import clr
+
+    for name in _WPF_ASSEMBLIES:
+        clr.AddReference(name)
 
     from Microsoft.Web.WebView2.Core import (
         CoreWebView2 as _CoreWebView2,

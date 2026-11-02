@@ -40,10 +40,18 @@ _RUN_PIP = (
 )
 
 
+_FETCH_PIP = (
+    "import json, sys, urllib.request; "
+    "files = json.load(urllib.request.urlopen('https://pypi.org/pypi/pip/json'))['urls']; "
+    "url = next(f['url'] for f in files if f['packagetype'] == 'bdist_wheel'); "
+    "urllib.request.urlretrieve(url, sys.argv[1])"
+)
+
+
 def packages_dir(tag, group=DEFAULT_GROUP):
     # type: (str, str) -> str
     """Where ``group``'s packages for the interpreter with this ``cpXY`` tag are installed."""
-    return os.path.join(os.environ["LOCALAPPDATA"], "pyWebUI", "packages", group, tag)
+    return os.path.join(os.environ["LOCALAPPDATA"], "pywebui", "packages", group, tag)
 
 
 def find_python(engines_dir, prefix):
@@ -85,6 +93,24 @@ def _unmet(python_exe, folder, requirements):
     return output.splitlines()
 
 
+def _pip_path(python_exe):
+    # type: (str) -> str
+    """The ``sys.path`` entry that provides ``pip``: the engine's ``site-packages``, or a downloaded wheel."""
+    site_packages = os.path.join(os.path.dirname(python_exe), "Lib", "site-packages")
+    if os.path.isdir(os.path.join(site_packages, "pip")):
+        return site_packages
+    wheel = os.path.join(os.environ["LOCALAPPDATA"], "pywebui", "pip.whl")
+    if not os.path.isfile(wheel):
+        partial = wheel + ".part"
+        if not os.path.isdir(os.path.dirname(wheel)):
+            os.makedirs(os.path.dirname(wheel))
+        code, output = _run(python_exe, ["-I", "-c", _FETCH_PIP, partial])
+        if code != 0:
+            raise RuntimeError("cannot download pip: {0}".format(output))
+        os.rename(partial, wheel)
+    return wheel
+
+
 def ensure_packages(python_exe, requirements, group=DEFAULT_GROUP):
     # type: (str, List[str], str) -> Tuple[bool, str]
     """Make ``requirements`` importable from ``packages_dir(tag, group)`` for ``python_exe``.
@@ -101,10 +127,9 @@ def ensure_packages(python_exe, requirements, group=DEFAULT_GROUP):
     staging = folder + ".new"
     if os.path.isdir(staging):
         shutil.rmtree(staging)
-    site_packages = os.path.join(os.path.dirname(python_exe), "Lib", "site-packages")
     code, output = _run(
         python_exe,
-        ["-c", _RUN_PIP, site_packages, "install", "--disable-pip-version-check", "--target", staging]
+        ["-c", _RUN_PIP, _pip_path(python_exe), "install", "--disable-pip-version-check", "--target", staging]
         + list(requirements),
     )
     if code != 0:
